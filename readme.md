@@ -1,6 +1,9 @@
 # stablediffusion-infinity
 
+
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lkwq007/stablediffusion-infinity/blob/master/stablediffusion_infinity_colab.ipynb)
+
+![demo](demo.gif))]
 
 Outpainting with Stable Diffusion on an infinite canvas
 
