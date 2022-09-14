@@ -5,8 +5,10 @@ import numpy as np
 import scipy
 import scipy.signal
 from scipy.spatial import cKDTree
-from PyPatchMatch import patch_match
-
+try:
+    from PyPatchMatch import patch_match
+except Exception as e:
+    import patch_match
 import numpy as np
 
 ##########
