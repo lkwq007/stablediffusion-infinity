@@ -5,7 +5,7 @@ import numpy as np
 import scipy
 import scipy.signal
 from scipy.spatial import cKDTree
-import patch_match
+from PyPatchMatch import patch_match
 
 import numpy as np
 

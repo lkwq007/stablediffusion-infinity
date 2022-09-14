@@ -1,0 +1,3 @@
+[submodule "PyPatchMatch"]
+	path = PyPatchMatch
+	url = https://github.com/vacancy/PyPatchMatch
