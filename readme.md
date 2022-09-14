@@ -4,7 +4,7 @@
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lkwq007/stablediffusion-infinity/blob/master/stablediffusion_infinity_colab.ipynb)
 
 Start with text2img:
-<!-- ![demo](demo.gif))] -->
+![demo](demo.gif))]
 
 Start with init_image:
 
