@@ -5,11 +5,14 @@ import numpy as np
 import scipy
 import scipy.signal
 from scipy.spatial import cKDTree
-try:
-    from PyPatchMatch import patch_match
-except Exception as e:
-    import patch_match
-import numpy as np
+
+import os
+
+if os.name != "nt":
+    try:
+        from PyPatchMatch import patch_match
+    except Exception as e:
+        import patch_match
 
 ##########
 # https://stackoverflow.com/questions/42147776/producing-2d-perlin-noise-with-numpy
@@ -175,8 +178,7 @@ functbl = {
     "gaussian": gaussian_noise,
     "perlin": perlin_noise,
     "edge_pad": edge_pad,
-    "pyheal": edge_pad,
-    "patchmatch": patch_match_func,
+    "patchmatch": patch_match_func if os.name!="nt" else edge_pad,
     "cv2_ns": cv2_ns,
     "cv2_telea": cv2_telea,
     "mean_fill": mean_fill,
