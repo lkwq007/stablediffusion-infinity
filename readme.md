@@ -21,6 +21,7 @@ https://user-images.githubusercontent.com/1665437/190212025-f4a82c46-0ff1-4ca2-b
 Outpainting with Stable Diffusion on an infinite canvas.
 
 It is recommended run the notebook on a local server for better interactive control. 
+
 The notebook might work on Windows (untested) and Apple Silicon devices (untested, check guide here: https://huggingface.co/docs/diffusers/optimization/mps). 
 
 ## Setup environment
