@@ -8,11 +8,21 @@ from scipy.spatial import cKDTree
 
 import os
 
+patch_match_compiled = True
 if os.name != "nt":
     try:
         from PyPatchMatch import patch_match
     except Exception as e:
-        import patch_match
+        try:
+            import patch_match
+        except Exception as e:
+            patch_match_compiled = False
+
+try:
+    patch_match
+except NameError:
+    print("patch_match compiling failed")
+    patch_match_compiled = False
 
 ##########
 # https://stackoverflow.com/questions/42147776/producing-2d-perlin-noise-with-numpy
@@ -178,7 +188,7 @@ functbl = {
     "gaussian": gaussian_noise,
     "perlin": perlin_noise,
     "edge_pad": edge_pad,
-    "patchmatch": patch_match_func if os.name != "nt" else edge_pad,
+    "patchmatch": patch_match_func if (os.name != "nt" and patch_match_compiled) else edge_pad,
     "cv2_ns": cv2_ns,
     "cv2_telea": cv2_telea,
     "mean_fill": mean_fill,

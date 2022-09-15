@@ -46,7 +46,7 @@ class InfCanvas:
         self.output = widgets.Output()
         self.test_mode = test_mode
         self.buffer_updated = False
-        self.image_move_freq = 10
+        self.image_move_freq = 5
         # inpaint pipeline from diffuser
 
     def setup_mouse(self):
