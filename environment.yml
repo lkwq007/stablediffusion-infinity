@@ -74,7 +74,7 @@ dependencies:
   - ipykernel=6.15.3=pyh210e3f2_0
   - ipython=8.5.0=pyh41d4057_1
   - ipython_genutils=0.2.0=py_1
-  - ipywidgets=8.0.2=pyhd8ed1ab_1
+  - ipywidgets=7.7.1=pyhd8ed1ab_0
   - jedi=0.18.1=pyhd8ed1ab_2
   - jinja2=3.1.2=pyhd8ed1ab_1
   - joblib=1.1.0=pyhd8ed1ab_0
@@ -87,7 +87,7 @@ dependencies:
   - jupyterlab=3.4.7=pyhd8ed1ab_0
   - jupyterlab_pygments=0.2.2=pyhd8ed1ab_0
   - jupyterlab_server=2.15.1=pyhd8ed1ab_0
-  - jupyterlab_widgets=3.0.3=pyhd8ed1ab_0
+  - jupyterlab_widgets=1.1.1=pyhd8ed1ab_0
   - keyutils=1.6.1=h166bdaf_0
   - krb5=1.19.3=h3790be6_0
   - lame=3.100=h7b6447c_0
@@ -225,7 +225,7 @@ dependencies:
   - webencodings=0.5.1=py_1
   - websocket-client=1.4.1=pyhd8ed1ab_0
   - wheel=0.37.1=pyhd3eb1b0_0
-  - widgetsnbextension=4.0.3=pyhd8ed1ab_0
+  - widgetsnbextension=3.6.1=pyha770c72_0
   - xxhash=0.8.0=h7f98852_3
   - xz=5.2.6=h166bdaf_0
   - yaml=0.2.5=h7f98852_2

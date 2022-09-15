@@ -38,7 +38,8 @@ conda create -n sd-inf python=3.10
 conda activate sd-inf
 conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
 conda install scipy
-conda install -c conda-forge jupyterlab 
+conda install -c conda-forge jupyterlab
+conda install -c conda-forge ipywidgets=7.7.1
 conda install -c conda-forge ipycanvas
 conda install -c conda-forge diffusers transformers ftfy
 pip install opencv-python
