@@ -18,9 +18,11 @@ https://user-images.githubusercontent.com/1665437/190212025-f4a82c46-0ff1-4ca2-b
 
 
 
-Outpainting with Stable Diffusion on an infinite canvas
+Outpainting with Stable Diffusion on an infinite canvas.
 
-It is recommended run the notebook on a local server. 
+It is recommended run the notebook on a local server for better interactive control. 
+The notebook might work on Windows (untested) and Apple Silicon devices (untested, check guide here: https://huggingface.co/docs/diffusers/optimization/mps). 
+
 ## Setup environment
 setup with `environment.yml`
 ```
@@ -41,7 +43,7 @@ conda install -c conda-forge diffusers transformers ftfy
 pip install opencv-python
 ```
 
-Note that `opencv` library is required for `PyPatchMatch`. You may need to install `opencv` by yourself. 
+Note that `opencv` library is required for `PyPatchMatch`. You may need to install `opencv` by yourself. If no `opencv` installed, the `patch_match` option (usually better quality) won't work. 
 
 ## How-to
 
