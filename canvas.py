@@ -148,8 +148,8 @@ class InfCanvas:
         self.fill_button = widgets.ToggleButtons(
             description="Init mode:",
             options=[
-                "edge_pad",
                 "patchmatch",
+                "edge_pad",
                 "cv2_ns",
                 "cv2_telea",
                 "gaussian",
