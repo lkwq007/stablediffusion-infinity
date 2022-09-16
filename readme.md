@@ -16,7 +16,7 @@ Start with text2img:
 https://user-images.githubusercontent.com/1665437/190212025-f4a82c46-0ff1-4ca2-b79b-6c81601e3eed.mp4
 
 
-It is recommended run the notebook on a local server for better interactive control. 
+It is recommended to run the notebook on a local server for better interactive control. 
 
 The notebook might work on Windows (see this issue https://github.com/lkwq007/stablediffusion-infinity/issues/12 for more information) and Apple Silicon devices (untested, check guide here: https://huggingface.co/docs/diffusers/optimization/mps). 
 
@@ -57,10 +57,13 @@ jupyter lab
 ```
 ## FAQs
 
-- Troubleshooting on Windows: https://github.com/lkwq007/stablediffusion-infinity/issues/12
-- What are the init_mode
+- Troubleshooting on Windows: 
+  - https://github.com/lkwq007/stablediffusion-infinity/issues/12
+- False positive rate of safety checker is quite high: 
+  - https://github.com/lkwq007/stablediffusion-infinity/issues/8#issuecomment-1248448453
+- What is the init_mode
   - init_mode indicates how to fill the empty/masked region, usually `patch_match` is better than others
 - The GUI is lagging on colab
-  - It is recommended run the notebook on a local server since the interactions and canvas content updates are actually handled by the python backend on the serverside, and that's how `ipycanvas` works
+  - It is recommended to run the notebook on a local server since the interactions and canvas content updates are actually handled by the python backend on the serverside, and that's how `ipycanvas` works
   - colab doesn't support the latest version of `ipycanvas`, which may have better performance
-- False positive rate of safety checker is quite high: https://github.com/lkwq007/stablediffusion-infinity/issues/8#issuecomment-1248448453
+
