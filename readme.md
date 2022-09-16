@@ -45,7 +45,10 @@ conda install -c conda-forge diffusers transformers ftfy
 pip install opencv-python
 ```
 
-Note that `opencv` library is required for `PyPatchMatch`. You may need to install `opencv` by yourself. If no `opencv` installed, the `patch_match` option (usually better quality) won't work. 
+For windows, you may need to replace `pip install opencv-python` with `conda install -c conda-forge opencv`
+## CPP library (optional)
+
+Note that `opencv` library (e.g. `libopencv-dev`/`opencv-devel`, the package name may differ on different distributions) is required for `PyPatchMatch`. You may need to install `opencv` by yourself. If no `opencv` installed, the `patch_match` option (usually better quality) won't work. 
 
 ## How-to
 
