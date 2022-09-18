@@ -62,6 +62,27 @@ jupyter lab
 # and then open stablediffusion_infinity.ipynb and run cells
 
 ```
+
+## Running with Docker
+
+This should get you started without needing to manually install anything, except for having an environment with Docker installed (This has been tested on Docker Desktop on Windows 10 using the WSL2 backend.
+) and an Nvidia GPU.
+
+First, update the .env file with your Huggingface token from https://huggingface.co/settings/tokens
+
+Open your shell that has docker and run these commands
+
+```
+cd stablediffusion-infinity
+docker-compose build
+docker-compose up
+```
+
+Watch the log for the url to open in your browser. Choose the one that starts with http://127.0.0.1:8888/
+
+Once in jupyter lab, run the noteboook "stablediffusion_infinity.ipynb"
+
+
 ## FAQs
 
 - Troubleshooting on Windows: 
