@@ -25,7 +25,7 @@ The notebook might work on Windows (see this issue https://github.com/lkwq007/st
 This project mainly works as a proof of concept. In that case, the UI design is relatively weak, and the quality of results is not guaranteed. 
 You may need to do prompt engineering or change the size of the selection box to get better outpainting results. 
 
-For better UI control or ideas to achieve better results, pull requests are welcome. 
+Pull requests are welcome for better UI control, ideas to achieve better results, or any other improvements. 
 
 ## Setup environment
 setup with `environment.yml`
