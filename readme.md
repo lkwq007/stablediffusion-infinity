@@ -67,3 +67,6 @@ jupyter lab
   - It is recommended to run the notebook on a local server since the interactions and canvas content updates are actually handled by the python backend on the serverside, and that's how `ipycanvas` works
   - colab doesn't support the latest version of `ipycanvas`, which may have better performance
 
+## Credit
+
+The code of `perlin2d.py` is from https://stackoverflow.com/questions/42147776/producing-2d-perlin-noise-with-numpy/42154921#42154921 and is **not** included in the scope of LICENSE used in this repo.
