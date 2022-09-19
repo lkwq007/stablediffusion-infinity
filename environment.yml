@@ -235,4 +235,4 @@ dependencies:
   - zlib=1.2.12=h5eee18b_3
   - zstd=1.5.2=ha4553b6_0
   - pip:
-    - opencv-python==4.6.0.66
+    - opencv-python-headless==4.6.0.66
