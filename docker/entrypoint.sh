@@ -11,6 +11,10 @@ fi
 echo -n "$HUGGINGFACE_TOKEN" > /home/user/.huggingface/token
 
 set -x
+
+git submodule init
+git submodule update
+
 if ! conda env list | grep sd-inf ; then
     git config --global credential.helper store
     echo "Creating environment, wait a few minutes..."
