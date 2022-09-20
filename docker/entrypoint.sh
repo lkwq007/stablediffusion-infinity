@@ -11,16 +11,18 @@ fi
 echo -n "$HUGGINGFACE_TOKEN" > /home/user/.huggingface/token
 
 set -x
+
+git submodule init
+git submodule update
+
 if ! conda env list | grep sd-inf ; then
     git config --global credential.helper store
     echo "Creating environment, wait a few minutes..."
     conda env create -f environment.yml
     echo "conda activate sd-inf" >> ~/.bashrc
-    . "/opt/conda/etc/profile.d/conda.sh"
-    conda activate sd-inf
-else
-   . "/opt/conda/etc/profile.d/conda.sh"
-    conda activate sd-inf
 fi
+
+. "/opt/conda/etc/profile.d/conda.sh"
+conda activate sd-inf
 
 jupyter lab --ip=0.0.0.0 --port=8888
