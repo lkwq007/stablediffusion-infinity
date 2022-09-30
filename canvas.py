@@ -1,12 +1,97 @@
-from ipycanvas import Canvas, hold_canvas, MultiCanvas
-import ipywidgets as widgets
+import base64
+import io
 import numpy as np
+from PIL import Image
+from pyodide import to_js, create_proxy
+from js import (
+    console,
+    document,
+    devicePixelRatio,
+    ImageData,
+    Uint8ClampedArray,
+    CanvasRenderingContext2D as Context2d,
+    requestAnimationFrame,
+)
 
 PAINT_SELECTION = "✥"
 IMAGE_SELECTION = "🖼️"
+BRUSH_SELECTION = "🖌️"
 NOP_MODE = 0
 PAINT_MODE = 1
 IMAGE_MODE = 2
+BRUSH_MODE = 3
+
+
+def hold_canvas():
+    pass
+
+
+def prepare_canvas(width, height, canvas) -> Context2d:
+    ctx = canvas.getContext("2d")
+
+    canvas.style.width = f"{width}px"
+    canvas.style.height = f"{height}px"
+
+    canvas.width = width
+    canvas.height = height
+
+    ctx.clearRect(0, 0, width, height)
+
+    return ctx
+
+
+# class MultiCanvas:
+#     def __init__(self,layer,width=800, height=600) -> None:
+#         pass
+def multi_canvas(layer, width=800, height=600):
+    lst = [
+        CanvasProxy(document.querySelector(f"#canvas{i}"), width, height)
+        for i in range(layer)
+    ]
+    return lst
+
+
+class CanvasProxy:
+    def __init__(self, canvas, width=800, height=600) -> None:
+        self.canvas = canvas
+        self.ctx = prepare_canvas(width, height, canvas)
+        self.width = width
+        self.height = height
+
+    def clear_rect(self, x, y, w, h):
+        self.ctx.clearRect(x, y, w, h)
+
+    def clear(self,):
+        self.clear_rect(0, 0, self.width, self.height)
+
+    def stroke_rect(self, x, y, w, h):
+        self.ctx.strokeRect(x, y, w, h)
+
+    def fill_rect(self, x, y, w, h):
+        self.ctx.fillRect(x, y, w, h)
+
+    def put_image_data(self, image, x, y):
+        data = Uint8ClampedArray.new(to_js(image.tobytes()))
+        height, width, _ = image.shape
+        image_data = ImageData.new(data, width, height)
+        self.ctx.putImageData(image_data, x, y)
+
+    @property
+    def stroke_style(self):
+        return self.ctx.strokeStyle
+
+    @stroke_style.setter
+    def stroke_style(self, value):
+        self.ctx.strokeStyle = value
+
+    @property
+    def fill_style(self):
+        return self.ctx.strokeStyle
+
+    @fill_style.setter
+    def fill_style(self, value):
+        self.ctx.fillStyle = value
+
 
 # RGBA for masking
 class InfCanvas:
@@ -22,7 +107,7 @@ class InfCanvas:
         assert selection_size < min(height, width)
         self.width = width
         self.height = height
-        self.canvas = MultiCanvas(4, width=width, height=height)
+        self.canvas = multi_canvas(5, width=width, height=height)
         # self.canvas = Canvas(width=width, height=height)
         self.view_pos = [0, 0]
         self.cursor = [
@@ -43,76 +128,121 @@ class InfCanvas:
         self.buffer_dirty = False
         self.mouse_pos = [-1, -1]
         self.mouse_state = 0
-        self.output = widgets.Output()
+        # self.output = widgets.Output()
         self.test_mode = test_mode
         self.buffer_updated = False
-        self.image_move_freq = 5
+        self.image_move_freq = 1
+        self.show_brush = False
         # inpaint pipeline from diffuser
 
     def setup_mouse(self):
         self.image_move_cnt = 0
 
         def get_mouse_mode():
-            if self.mode_button.value == PAINT_SELECTION:
+            mode = document.querySelector("#mode").value
+            if mode == PAINT_SELECTION:
                 return PAINT_MODE
-            return IMAGE_MODE
+            elif mode == IMAGE_SELECTION:
+                return IMAGE_MODE
+            return BRUSH_MODE
 
-        def handle_mouse_down(x, y):
+        def get_event_pos(event):
+            canvas = self.canvas[-1].canvas
+            rect = canvas.getBoundingClientRect()
+            x = (canvas.width * (event.clientX - rect.left)) / rect.width
+            y = (canvas.height * (event.clientY - rect.top)) / rect.height
+            return x, y
+
+        def handle_mouse_down(event):
             self.mouse_state = get_mouse_mode()
 
-        def handle_mouse_out():
+        def handle_mouse_out(event):
             last_state = self.mouse_state
             self.mouse_state = NOP_MODE
             self.image_move_cnt = 0
             if last_state == IMAGE_MODE:
-                with hold_canvas():
+                if True:
+                    self.clear_background()
+                    self.draw_buffer()
+                    self.canvas[2].clear()
+                    self.draw_selection_box()
+            if self.show_brush:
+                self.canvas[-2].clear()
+                self.show_brush = False
+
+        def handle_mouse_up(event):
+            last_state = self.mouse_state
+            self.mouse_state = NOP_MODE
+            self.image_move_cnt = 0
+            if last_state == IMAGE_MODE:
+                if True:
                     self.clear_background()
                     self.draw_buffer()
                     self.canvas[2].clear()
                     self.draw_selection_box()
 
-        def handle_mouse_up(x, y):
-            last_state = self.mouse_state
-            self.mouse_state = NOP_MODE
-            self.image_move_cnt = 0
-            if last_state == IMAGE_MODE:
-                with hold_canvas():
-                    self.clear_background()
-                    self.draw_buffer()
-                    self.canvas[2].clear()
-                    self.draw_selection_box()
-
-        def handle_mouse_move(x, y):
+        async def handle_mouse_move(event):
+            x, y = get_event_pos(event)
             x0, y0 = self.mouse_pos
             xo = x - x0
             yo = y - y0
             if self.mouse_state == PAINT_MODE:
-                with self.output:
-                    self.update_cursor(int(xo), int(yo))
-                with hold_canvas():
+                self.update_cursor(int(xo), int(yo))
+                if True:
                     # self.clear_background()
+                    # console.log(self.buffer_updated)
                     if self.buffer_updated:
                         self.draw_buffer()
                         self.buffer_updated = False
                     self.draw_selection_box()
             elif self.mouse_state == IMAGE_MODE:
                 self.image_move_cnt += 1
-                with self.output:
-                    self.update_view_pos(int(xo), int(yo))
+                self.update_view_pos(int(xo), int(yo))
                 if self.image_move_cnt == self.image_move_freq:
-                    with hold_canvas():
+                    if True:
                         self.clear_background()
                         self.draw_buffer()
                         self.canvas[2].clear()
                         self.draw_selection_box()
                     self.image_move_cnt = 0
+            elif self.mouse_state == BRUSH_MODE:
+                if self.sel_dirty:
+                    self.write_selection_to_buffer()
+                    self.canvas[2].clear()
+                self.buffer_dirty=True
+                bx0,by0=int(x)-self.grid_size//2,int(y)-self.grid_size//2
+                bx1,by1=bx0+self.grid_size,by0+self.grid_size
+                bx0,by0=max(0,bx0),max(0,by0)
+                bx1,by1=min(self.width,bx1),min(self.height,by1)
+                self.buffer[by0:by1,bx0:bx1,:]*=0
+                self.draw_buffer()
+                self.draw_selection_box()
+
+            mode = document.querySelector("#mode").value
+            if mode == BRUSH_SELECTION:
+                self.canvas[-2].clear()
+                self.canvas[-2].fill_style = "#ffffff"
+                self.canvas[-2].fill_rect(x-self.grid_size//2,y-self.grid_size//2,self.grid_size,self.grid_size)
+                self.canvas[-2].stroke_rect(x-self.grid_size//2,y-self.grid_size//2,self.grid_size,self.grid_size)
+                self.show_brush = True
+            elif self.show_brush:
+                self.canvas[-2].clear()
+                self.show_brush = False
             self.mouse_pos[0] = x
             self.mouse_pos[1] = y
 
-        self.canvas.on_mouse_down(handle_mouse_down)
-        self.canvas.on_mouse_move(handle_mouse_move)
-        self.canvas.on_mouse_up(handle_mouse_up)
-        self.canvas.on_mouse_out(handle_mouse_out)
+        self.canvas[-1].canvas.addEventListener(
+            "mousedown", create_proxy(handle_mouse_down)
+        )
+        self.canvas[-1].canvas.addEventListener(
+            "mousemove", create_proxy(handle_mouse_move)
+        )
+        self.canvas[-1].canvas.addEventListener(
+            "mouseup", create_proxy(handle_mouse_up)
+        )
+        self.canvas[-1].canvas.addEventListener(
+            "mouseout", create_proxy(handle_mouse_out)
+        )
 
     def setup_widgets(self):
         self.mode_button = widgets.ToggleButtons(
@@ -187,7 +317,7 @@ class InfCanvas:
                                 (self.selection_size, self.selection_size, 1),
                             )
                         )
-                    with hold_canvas():
+                    if True:
                         self.clear_background()
                         self.draw_buffer()
                         self.draw_selection_box()
@@ -195,7 +325,7 @@ class InfCanvas:
             self.run_button.on_click(test_button_clicked)
 
     def display(self):
-        with hold_canvas():
+        if True:
             self.clear_background()
             self.draw_buffer()
             self.draw_selection_box()
@@ -355,6 +485,28 @@ class InfCanvas:
         self.sel_buffer = self.buffer[y0:y1, x0:x1]
         self.sel_dirty = False
 
+    def base64_to_numpy(self, base64_str):
+        try:
+            data = base64.b64decode(str(base64_str))
+            pil = Image.open(io.BytesIO(data))
+            arr = np.array(pil)
+            ret = arr
+        except:
+            ret = np.tile(
+                np.array([255, 0, 0, 255], dtype=np.uint8),
+                (self.selection_size, self.selection_size, 1),
+            )
+        return ret
+
+    def numpy_to_base64(self, arr):
+        out_pil = Image.fromarray(arr)
+        out_buffer = io.BytesIO()
+        out_pil.save(out_buffer, format="PNG")
+        out_buffer.seek(0)
+        base64_bytes = base64.b64encode(out_buffer.read())
+        base64_str = base64_bytes.decode("ascii")
+        return base64_str
+
     def export(self):
         if self.sel_dirty:
             self.write_selection_to_buffer()
@@ -384,7 +536,12 @@ class InfCanvas:
                 x0 = (xi - xmin) * self.patch_size
                 image[y0 : y0 + self.patch_size, x0 : x0 + self.patch_size] = buf
         ylst, xlst = image[:, :, -1].nonzero()
-        yt, xt = ylst.min(), xlst.min()
-        yb, xb = ylst.max(), xlst.max()
-        image = image[yt : yb + 1, xt : xb + 1]
-        return image
+        if len(ylst) > 0:
+            yt, xt = ylst.min(), xlst.min()
+            yb, xb = ylst.max(), xlst.max()
+            image = image[yt : yb + 1, xt : xb + 1]
+            return image
+        else:
+            return np.zeros(
+                (self.selection_size, self.selection_size, 4), dtype=np.uint8
+            )
