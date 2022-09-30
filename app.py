@@ -389,9 +389,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="stablediffusion-infinity")
     parser.add_argument("--port", type=int, help="listen port", default=7860)
     parser.add_argument("--host", type=str, help="host", default="127.0.0.1")
-    parser.add_argument(
-        "--share", type=bool, action="store_true", help="share this app?"
-    )
+    parser.add_argument("--share", action="store_true", help="share this app?")
     args = parser.parse_args()
     if args.share:
         demo.launch(share=True)
