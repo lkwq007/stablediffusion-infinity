@@ -11,6 +11,7 @@ from PIL import ImageOps
 import gradio as gr
 import base64
 import skimage
+import skimage.measure
 from utils import *
 
 
