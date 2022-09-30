@@ -233,7 +233,7 @@ with blocks as demo:
             label="Canvas height", value=600, precision=0, elem_id="canvas_height"
         )
         selection_size = gr.Number(
-            label="Selection box size", value=384, precision=0, elem_id="selection_size"
+            label="Selection box size", value=256, precision=0, elem_id="selection_size"
         )
     setup_button = gr.Button("Setup (may take a while)", variant="primary")
     with gr.Row():
