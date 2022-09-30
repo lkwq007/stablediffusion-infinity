@@ -55,10 +55,7 @@ Note that `opencv` library (e.g. `libopencv-dev`/`opencv-devel`, the package nam
 
 ```
 conda activate sd-inf
-huggingface-cli login # ignore this if you have already logged in
-jupyter lab
-# and then open stablediffusion_infinity.ipynb and run cells
-
+python app.py
 ```
 
 ## Running with Docker
@@ -77,8 +74,6 @@ docker-compose up
 ```
 
 Watch the log for the url to open in your browser. Choose the one that starts with http://127.0.0.1:8888/
-
-Once in jupyter lab, run the noteboook "stablediffusion_infinity.ipynb"
 
 
 ## FAQs

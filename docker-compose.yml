@@ -3,7 +3,7 @@ services:
   sd-infinity:
     build: docker
     ports:
-      - "7860:7860"
+      - "8888:8888"
     stdin_open: true
     tty: true
     command: "/home/user/app/docker/entrypoint.sh"

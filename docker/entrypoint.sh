@@ -25,4 +25,4 @@ fi
 . "/opt/conda/etc/profile.d/conda.sh"
 conda activate sd-inf
 
-jupyter lab --ip=0.0.0.0 --port=8888
+python app.py --port=8888
