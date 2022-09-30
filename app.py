@@ -213,9 +213,7 @@ with blocks as demo:
     # title
     title = gr.Markdown(
         """
-    # stablediffusion-infinity
-
-    Outpainting with Stable Diffusion on an infinite canvas: [https://github.com/lkwq007/stablediffusion-infinity](https://github.com/lkwq007/stablediffusion-infinity)
+    **stablediffusion-infinity**: Outpainting with Stable Diffusion on an infinite canvas: [https://github.com/lkwq007/stablediffusion-infinity](https://github.com/lkwq007/stablediffusion-infinity)
     """
     )
     # frame
@@ -238,7 +236,7 @@ with blocks as demo:
         )
     setup_button = gr.Button("Setup (may take a while)", variant="primary")
     with gr.Row():
-        with gr.Column(scale=1, min_width=270):
+        with gr.Column(scale=3, min_width=270):
             # canvas control
             canvas_control = gr.Radio(
                 label="Control",
@@ -246,7 +244,6 @@ with blocks as demo:
                 value=PAINT_SELECTION,
                 elem_id="control",
             )
-        with gr.Column(scale=2, min_width=350):
             with gr.Box():
                 with gr.Group():
                     run_button = gr.Button(value="Outpaint")
@@ -254,9 +251,20 @@ with blocks as demo:
                     commit_button = gr.Button(value="✓")
                     retry_button = gr.Button(value="⟳")
                     undo_button = gr.Button(value="↶")
-                sd_resize = gr.Checkbox(label="Resize SD input to 515x512", value=True)
-        with gr.Column(scale=4, min_width=500):
-            sd_prompt = gr.Textbox(label="Prompt", placeholder="input your prompt here")
+        with gr.Column(scale=3, min_width=270):
+            sd_prompt = gr.Textbox(
+                label="Prompt", placeholder="input your prompt here", lines=4
+            )
+        with gr.Column(scale=2, min_width=150):
+            with gr.Box():
+                sd_resize = gr.Checkbox(label="Resize input to 515x512", value=True)
+                safety_check = gr.Checkbox(label="Enable Safety Checker", value=True)
+            sd_strength = gr.Slider(
+                label="Strength", minimum=0.0, maximum=1.0, value=0.75, step=0.01
+            )
+        with gr.Column(scale=1, min_width=150):
+            sd_step = gr.Number(label="Step", value=50, precision=0)
+            sd_guidance = gr.Number(label="Guidance", value=7.5)
     with gr.Row():
         with gr.Column(scale=4, min_width=600):
             init_mode = gr.Radio(
@@ -272,16 +280,8 @@ with blocks as demo:
                 value="patchmatch",
                 type="value",
             )
-        with gr.Column(scale=1, min_width=90):
-            sd_step = gr.Number(label="Step", value=50, precision=0)
-        with gr.Column(scale=1, min_width=90):
-            sd_guidance = gr.Number(label="Guidance", value=7.5)
-        with gr.Column(scale=2, min_width=200):
-            sd_strength = gr.Slider(
-                label="Strength", minimum=0.0, maximum=1.0, value=0.75, step=0.01
-            )
+
     proceed_button = gr.Button("Proceed", elem_id="proceed", visible=DEBUG_MODE)
-    safety_check = gr.Checkbox(label="Enable Safety Check", value=True)
     # sd pipeline parameters
     with gr.Accordion("Upload image", open=False):
         image_box = gr.Image(image_mode="RGBA", source="upload", type="pil")
@@ -383,5 +383,18 @@ with blocks as demo:
     canvas_control.change(
         fn=None, inputs=[canvas_control], outputs=[canvas_control], _js=mode_js,
     )
+if __name__ == "__main__":
+    import argparse
 
-demo.launch(server_name="0.0.0.0")
+    parser = argparse.ArgumentParser(description="stablediffusion-infinity")
+    parser.add_argument("--port", type=int, help="listen port", default=7860)
+    parser.add_argument("--host", type=str, help="host", default="127.0.0.1")
+    parser.add_argument(
+        "--share", type=bool, action="store_true", help="share this app?"
+    )
+    args = parser.parse_args()
+    if args.share:
+        demo.launch(share=True)
+    else:
+        demo.launch(server_name=args.host, server_port=args.port)
+
