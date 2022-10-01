@@ -13,20 +13,19 @@ https://user-images.githubusercontent.com/1665437/193394123-d202efc8-24a7-41b3-a
 
 
 
-
-Start with text2img:
+Start with text2img ([ipycanvas](https://github.com/lkwq007/stablediffusion-infinity/tree/ipycanvas) version):
 
 https://user-images.githubusercontent.com/1665437/190212025-f4a82c46-0ff1-4ca2-b79b-6c81601e3eed.mp4
 
 
-It is recommended to run the notebook on a local server for better interactive control. 
-
-The notebook might work on Windows (see this issue https://github.com/lkwq007/stablediffusion-infinity/issues/12 for more information) and Apple Silicon devices (untested, check guide here: https://huggingface.co/docs/diffusers/optimization/mps). 
+The web app might work on Windows (see this issue https://github.com/lkwq007/stablediffusion-infinity/issues/12 for more information) and Apple Silicon devices (untested, check guide here: https://huggingface.co/docs/diffusers/optimization/mps). 
 
 ## Status
 
-This project mainly works as a proof of concept. In that case, the UI design is relatively weak, and the quality of results is not guaranteed. 
+This project mainly works as a proof of concept. In that case, ~~the UI design is relatively weak~~, and the quality of results is not guaranteed. 
 You may need to do prompt engineering or change the size of the selection box to get better outpainting results. 
+
+The project now becomes a web app based on PyScript and Gradio. For Jupyter Notebook version, please check out the [ipycanvas](https://github.com/lkwq007/stablediffusion-infinity/tree/ipycanvas) branch. 
 
 Pull requests are welcome for better UI control, ideas to achieve better results, or any other improvements. 
 
@@ -87,9 +86,6 @@ Watch the log for the url to open in your browser. Choose the one that starts wi
   - https://github.com/lkwq007/stablediffusion-infinity/issues/8#issuecomment-1248448453
 - What is the init_mode
   - init_mode indicates how to fill the empty/masked region, usually `patch_match` is better than others
-- The GUI is lagging on colab
-  - It is recommended to run the notebook on a local server since the interactions and canvas content updates are actually handled by the python backend on the serverside, and that's how `ipycanvas` works
-  - colab doesn't support the latest version of `ipycanvas`, which may have better performance
 
 ## Credit
 
