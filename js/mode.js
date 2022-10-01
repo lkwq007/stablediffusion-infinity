@@ -1,6 +1,6 @@
 function(mode){
-    let app=document.querySelector("gradio-app").shadowRoot;
-    let frame=app.querySelector("#sdinfframe").contentWindow.document;
-    frame.querySelector("#mode").value=mode;
+    let app=document.querySelector("gradio-app");
+    let frame=app.querySelector("#sdinfframe").contentWindow;
+    frame.postMessage(["mode", mode], "*");
     return mode;
 }

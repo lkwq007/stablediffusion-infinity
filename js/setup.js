@@ -1,11 +1,11 @@
 function(token_val, width, height, size){
-    let app=document.querySelector("gradio-app").shadowRoot;
+    let app=document.querySelector("gradio-app");
     app.querySelector("#sdinfframe").style.height=height+"px";
     let frame=app.querySelector("#sdinfframe").contentWindow.document;
     if(frame.querySelector("#setup").value=="0")
     {
         window.my_setup=setInterval(function(){
-            let frame=document.querySelector("gradio-app").shadowRoot.querySelector("#sdinfframe").contentWindow.document;
+            let frame=document.querySelector("gradio-app").querySelector("#sdinfframe").contentWindow.document;
             console.log("Check PyScript...")
             if(frame.querySelector("#setup").value=="1")
             {

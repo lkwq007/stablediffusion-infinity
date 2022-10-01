@@ -29,7 +29,7 @@ def load_html():
 
 def test(x):
     x = load_html()
-    return f"""<iframe id="sdinfframe" style="width: 100%; height: 700px" name="result" allow="midi; geolocation; microphone; camera; 
+    return f"""<iframe id="sdinfframe" style="width: 100%; height: 600px" name="result" allow="midi; geolocation; microphone; camera; 
     display-capture; encrypted-media;" sandbox="allow-modals allow-forms 
     allow-scripts allow-same-origin allow-popups 
     allow-top-navigation-by-user-activation allow-downloads" allowfullscreen="" 
@@ -126,6 +126,22 @@ def run_outpaint(
     state,
 ):
     base64_str = "base64"
+    data = base64.b64decode(str(sel_buffer_str))
+    pil = Image.open(io.BytesIO(data))
+    sel_buffer = np.array(pil)
+    sel_buffer[:, :, 3]=255
+    sel_buffer[:, :, 0]=255
+    out_pil = Image.fromarray(sel_buffer)
+    out_buffer = io.BytesIO()
+    out_pil.save(out_buffer, format="PNG")
+    out_buffer.seek(0)
+    base64_bytes = base64.b64encode(out_buffer.read())
+    base64_str = base64_bytes.decode("ascii")
+    return (
+        gr.update(label=str(state + 1), value=base64_str,),
+        gr.update(label="Prompt"),
+        state + 1,
+    )
     if True:
         text2img, inpaint = get_model()
         if enable_safety:
@@ -191,9 +207,8 @@ def load_js(name):
         return f"""
 function (x)
 {{ 
-    let frame=document.querySelector("gradio-app").shadowRoot.querySelector("#sdinfframe").contentWindow.document;
-    let button=frame.querySelector("#{name}");
-    button.click();
+    let frame=document.querySelector("gradio-app").querySelector("#sdinfframe").contentWindow;
+    frame.postMessage(["click","{name}"], "*");
     return x;
 }}
 """
@@ -209,6 +224,8 @@ proceed_button_js = load_js("proceed")
 mode_js = load_js("mode")
 setup_button_js = load_js("setup")
 
+def get_model(x):
+    pass
 get_model(get_token())
 
 with blocks as demo:

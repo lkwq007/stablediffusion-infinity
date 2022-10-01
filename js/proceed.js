@@ -7,7 +7,7 @@ function(sel_buffer_str,
     fill_mode,
     enable_safety,
     state){
-    sel_buffer = document.querySelector("gradio-app").shadowRoot.querySelector("#input textarea").value;
+    sel_buffer = document.querySelector("gradio-app").querySelector("#input textarea").value;
     return [
         sel_buffer,
         prompt_text,

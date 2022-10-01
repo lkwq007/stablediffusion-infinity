@@ -80,6 +80,7 @@ from js import (
     Uint8ClampedArray,
     CanvasRenderingContext2D as Context2d,
     requestAnimationFrame,
+    window
 )
 
 
@@ -101,9 +102,9 @@ async def draw_canvas() -> None:
 
 async def draw_canvas_func(event):
     try:
-        width=parent.document.querySelector("gradio-app").shadowRoot.querySelector("#canvas_width input").value
-        height=parent.document.querySelector("gradio-app").shadowRoot.querySelector("#canvas_height input").value
-        selection_size=parent.document.querySelector("gradio-app").shadowRoot.querySelector("#selection_size input").value
+        width=parent.document.querySelector("gradio-app").querySelector("#canvas_width input").value
+        height=parent.document.querySelector("gradio-app").querySelector("#canvas_height input").value
+        selection_size=parent.document.querySelector("gradio-app").querySelector("#selection_size input").value
     except:
         width=1024
         height=768
@@ -129,7 +130,7 @@ async def export_func(event):
 
 async def outpaint_func(event):
     base=base_lst[0]
-    base64_str=parent.document.querySelector("gradio-app").shadowRoot.querySelector("#output textarea").value
+    base64_str=event.data[1]
     arr=base.base64_to_numpy(base64_str)
     base.fill_selection(arr)
     base.draw_selection_box()
@@ -151,12 +152,11 @@ async def transfer_func(event):
     base.read_selection_from_buffer()
     sel_buffer=base.sel_buffer
     sel_buffer_str=base.numpy_to_base64(sel_buffer)
-    parent.document.querySelector("gradio-app").shadowRoot.querySelector("#input textarea").value=sel_buffer_str
-    parent.document.querySelector("gradio-app").shadowRoot.querySelector("#proceed").click()
+    parent.postMessage(to_js(["transfer",str(sel_buffer_str)]),"*")
 
 async def upload_func(event):
     base=base_lst[0]
-    base64_str=parent.document.querySelector("gradio-app").shadowRoot.querySelector("#upload textarea").value
+    base64_str=event.data[1]
     arr=base.base64_to_numpy(base64_str)
     h,w,_=arr.shape
     yo=(base.height-h)//2
@@ -166,6 +166,7 @@ async def upload_func(event):
     base.buffer[yo:yo+h,xo:xo+w,0:3]=arr[:,:,0:3]
     base.buffer[yo:yo+h,xo:xo+w,-1]=arr[:,:,-1]
     base.draw_buffer()
+    base.canvas[-2].clear()
 
   
 
@@ -181,6 +182,24 @@ document.querySelector("#draw").addEventListener("click",create_proxy(draw_canva
 async def setup_func():
     document.querySelector("#setup").value="1"
 
+async def message_func(event):
+    if event.data[0]=="click":
+        if event.data[1]=="export":
+            await export_func(event)
+        elif event.data[1]=="commit":
+            await commit_func(event)
+        elif event.data[1]=="undo":
+            await undo_func(event)
+    elif event.data[0]=="upload":
+        await upload_func(event)
+    elif event.data[0]=="outpaint":
+        await outpaint_func(event)
+    elif event.data[0]=="mode":
+        document.querySelector("#mode").value=event.data[1]
+    elif event.data[0]=="transfer":
+        await transfer_func(event)
+    
+window.addEventListener("message",create_proxy(message_func))
 import asyncio
 
 _ = await asyncio.gather(

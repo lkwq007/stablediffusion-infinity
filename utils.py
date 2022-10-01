@@ -14,10 +14,7 @@ if os.name != "nt":
     try:
         from PyPatchMatch import patch_match
     except Exception as e:
-        try:
-            import patch_match
-        except Exception as e:
-            patch_match_compiled = False
+        import patch_match
 
 try:
     patch_match
