@@ -161,6 +161,10 @@ async def upload_func(event):
     h,w,_=arr.shape
     yo=(base.height-h)//2
     xo=(base.width-w)//2
+    if base.sel_dirty:
+        base.canvas[2].clear()
+        base.sel_buffer = base.sel_buffer_bak.copy()
+        base.sel_dirty = False
     base.buffer_dirty=True
     base.buffer*=0
     base.buffer[yo:yo+h,xo:xo+w,0:3]=arr[:,:,0:3]

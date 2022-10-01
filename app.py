@@ -325,7 +325,8 @@ with blocks as demo:
         try:
             get_model(token_val)
         except Exception as e:
-            return {token: gr.update(value="Invalid token!")}
+            print(e)
+            return {token: gr.update(value=str(e))}
         return {
             token: gr.update(visible=False),
             canvas_width: gr.update(visible=False),
