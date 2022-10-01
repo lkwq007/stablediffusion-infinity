@@ -68,20 +68,18 @@ IMAGE_SELECTION = "🖼️"
 BRUSH_SELECTION = "🖌️"
 blocks = gr.Blocks()
 model = {}
-
+model["width"] = 1500
+model["height"] = 600
+model["sel_size"] = 256
 
 def get_token():
     token = ""
-    if os.path.exists(".token"):
-        with open(".token", "r") as f:
-            token = f.read()
     token = os.environ.get("hftoken", token)
     return token
 
 
 def save_token(token):
-    with open(".token", "w") as f:
-        f.write(token)
+    return
 
 
 def get_model(token=""):
@@ -210,6 +208,9 @@ outpaint_button_js = load_js("outpaint")
 proceed_button_js = load_js("proceed")
 mode_js = load_js("mode")
 setup_button_js = load_js("setup")
+
+get_model(get_token())
+
 with blocks as demo:
     # title
     title = gr.Markdown(
@@ -218,24 +219,24 @@ with blocks as demo:
     """
     )
     # frame
-    frame = gr.HTML(test(2), visible=False)
+    frame = gr.HTML(test(2), visible=True)
     # setup
-    with gr.Row():
-        token = gr.Textbox(
-            label="Huggingface token",
-            value=get_token(),
-            placeholder="Input your token here",
-        )
-        canvas_width = gr.Number(
-            label="Canvas width", value=1024, precision=0, elem_id="canvas_width"
-        )
-        canvas_height = gr.Number(
-            label="Canvas height", value=600, precision=0, elem_id="canvas_height"
-        )
-        selection_size = gr.Number(
-            label="Selection box size", value=256, precision=0, elem_id="selection_size"
-        )
-    setup_button = gr.Button("Setup (may take a while)", variant="primary")
+    # with gr.Row():
+    #     token = gr.Textbox(
+    #         label="Huggingface token",
+    #         value="",
+    #         placeholder="Input your token here",
+    #     )
+    #     canvas_width = gr.Number(
+    #         label="Canvas width", value=1024, precision=0, elem_id="canvas_width"
+    #     )
+    #     canvas_height = gr.Number(
+    #         label="Canvas height", value=600, precision=0, elem_id="canvas_height"
+    #     )
+    #     selection_size = gr.Number(
+    #         label="Selection box size", value=256, precision=0, elem_id="selection_size"
+    #     )
+    # setup_button = gr.Button("Start (may take a while)", variant="primary")
     with gr.Row():
         with gr.Column(scale=3, min_width=270):
             # canvas control
@@ -287,7 +288,7 @@ with blocks as demo:
     with gr.Accordion("Upload image", open=False):
         image_box = gr.Image(image_mode="RGBA", source="upload", type="pil")
         upload_button = gr.Button(
-            "Before uploading the image you need to setup the canvas first"
+            "Upload"
         )
     model_output = gr.Textbox(visible=DEBUG_MODE, elem_id="output", label="0")
     model_input = gr.Textbox(visible=DEBUG_MODE, elem_id="input", label="Input")
@@ -336,20 +337,20 @@ with blocks as demo:
             upload_button: gr.update(value="Upload"),
         }
 
-    setup_button.click(
-        fn=setup_func,
-        inputs=[token, canvas_width, canvas_height, selection_size],
-        outputs=[
-            token,
-            canvas_width,
-            canvas_height,
-            selection_size,
-            setup_button,
-            frame,
-            upload_button,
-        ],
-        _js=setup_button_js,
-    )
+    # setup_button.click(
+    #     fn=setup_func,
+    #     inputs=[token, canvas_width, canvas_height, selection_size],
+    #     outputs=[
+    #         token,
+    #         canvas_width,
+    #         canvas_height,
+    #         selection_size,
+    #         setup_button,
+    #         frame,
+    #         upload_button,
+    #     ],
+    #     _js=setup_button_js,
+    # )
     run_button.click(
         fn=None, inputs=[run_button], outputs=[run_button], _js=outpaint_button_js,
     )

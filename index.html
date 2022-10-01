@@ -89,9 +89,9 @@ from canvas import InfCanvas
 
 base_lst = [None]
 async def draw_canvas() -> None:
-    width=1024
+    width=1500
     height=600
-    canvas=InfCanvas(1024,600)
+    canvas=InfCanvas(1500,600)
     document.querySelector("#container").style.width = f"{width}px"
     canvas.setup_mouse()
     canvas.clear_background()
@@ -184,7 +184,7 @@ async def setup_func():
 import asyncio
 
 _ = await asyncio.gather(
-  setup_func(),
+  setup_func(),draw_canvas()
 )
 </py-script>
 
