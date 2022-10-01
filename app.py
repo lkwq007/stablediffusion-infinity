@@ -17,9 +17,9 @@ from utils import *
 
 def load_html():
     body, canvaspy = "", ""
-    with open("index.html", "r") as f:
+    with open("index.html", encoding="utf8") as f:
         body = f.read()
-    with open("canvas.py", "r") as f:
+    with open("canvas.py", encoding="utf8") as f:
         canvaspy = f.read()
     body = body.replace("- paths:\n", "")
     body = body.replace("  - ./canvas.py\n", "")
