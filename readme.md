@@ -4,11 +4,14 @@ Outpainting with Stable Diffusion on an infinite canvas.
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lkwq007/stablediffusion-infinity/blob/master/stablediffusion_infinity_colab.ipynb)
 
-Start with init_image:
+Start with init_image (updated demo in Gradio):
 
 
 
-https://user-images.githubusercontent.com/1665437/190231611-fc263115-0fb9-4f2d-a71b-7e500c1e311d.mp4
+
+https://user-images.githubusercontent.com/1665437/193394123-d202efc8-24a7-41b3-a5cf-6b2e0b60db28.mp4
+
+
 
 
 Start with text2img:
