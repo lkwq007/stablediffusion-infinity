@@ -1,6 +1,7 @@
 import io
 import base64
 import os
+import sys
 
 import numpy as np
 import torch
@@ -13,6 +14,26 @@ import base64
 import skimage
 import skimage.measure
 from utils import *
+
+sys.path.append("./glid_3_xl_stable")
+from glid3xlmodel import GlidModel
+
+try:
+    cuda_available = torch.cuda.is_available()
+except:
+    cuda_available = False
+finally:
+    if sys.platform == "darwin":
+        device = "mps"
+    elif cuda_available:
+        device = "cuda"
+    else:
+        device = "cpu"
+
+if device != "cuda":
+    import contextlib
+
+    autocast = contextlib.nullcontext
 
 
 def load_html():
@@ -84,15 +105,23 @@ def save_token(token):
         f.write(token)
 
 
-def get_model(token=""):
-    if "text2img" not in model:
-        text2img = StableDiffusionPipeline.from_pretrained(
-            "CompVis/stable-diffusion-v1-4",
-            revision="fp16",
-            torch_dtype=torch.float16,
-            use_auth_token=token,
-        ).to("cuda")
-        model["safety_checker"] = text2img.safety_checker
+class StableDiffusion:
+    def __init__(self, token=""):
+        self.token = token
+        if device == "cuda":
+            text2img = StableDiffusionPipeline.from_pretrained(
+                "CompVis/stable-diffusion-v1-4",
+                revision="fp16",
+                torch_dtype=torch.float16,
+                use_auth_token=token,
+            ).to(device)
+        else:
+            text2img = StableDiffusionPipeline.from_pretrained(
+                "CompVis/stable-diffusion-v1-4", use_auth_token=token,
+            ).to(device)
+        if device == "mps":
+            _ = text2img("", num_inference_steps=1)
+        self.safety_checker = text2img.safety_checker
         inpaint = StableDiffusionInpaintPipeline(
             vae=text2img.vae,
             text_encoder=text2img.text_encoder,
@@ -101,7 +130,7 @@ def get_model(token=""):
             scheduler=text2img.scheduler,
             safety_checker=text2img.safety_checker,
             feature_extractor=text2img.feature_extractor,
-        ).to("cuda")
+        ).to(device)
         save_token(token)
         try:
             total_memory = torch.cuda.get_device_properties(0).total_memory // (
@@ -111,9 +140,71 @@ def get_model(token=""):
                 inpaint.enable_attention_slicing()
         except:
             pass
-        model["text2img"] = text2img
-        model["inpaint"] = inpaint
-    return model["text2img"], model["inpaint"]
+        self.text2img = text2img
+        self.inpaint = inpaint
+
+    def run(
+        self,
+        image_pil,
+        prompt="",
+        guidance_scale=7.5,
+        resize_check=True,
+        enable_safety=True,
+        fill_mode="patchmatch",
+        strength=0.75,
+        step=50,
+        **kwargs,
+    ):
+        text2img, inpaint = self.text2img, self.inpaint
+        if enable_safety:
+            text2img.safety_checker = model["safety_checker"]
+            inpaint.safety_checker = model["safety_checker"]
+        else:
+            text2img.safety_checker = lambda images, **kwargs: (images, False)
+            inpaint.safety_checker = lambda images, **kwargs: (images, False)
+
+        sel_buffer = np.array(image_pil)
+        img = sel_buffer[:, :, 0:3]
+        mask = sel_buffer[:, :, -1]
+        process_size = 512 if resize_check else model["sel_size"]
+        if mask.sum() > 0:
+            img, mask = functbl[fill_mode](img, mask)
+            init_image = Image.fromarray(img)
+            mask = 255 - mask
+            mask = skimage.measure.block_reduce(mask, (8, 8), np.max)
+            mask = mask.repeat(8, axis=0).repeat(8, axis=1)
+            mask_image = Image.fromarray(mask)
+            # mask_image=mask_image.filter(ImageFilter.GaussianBlur(radius = 8))
+            with autocast("cuda"):
+                images = inpaint(
+                    prompt=prompt,
+                    init_image=init_image.resize(
+                        (process_size, process_size), resample=SAMPLING_MODE
+                    ),
+                    mask_image=mask_image.resize((process_size, process_size)),
+                    strength=strength,
+                    num_inference_steps=step,
+                    guidance_scale=guidance_scale,
+                )["sample"]
+        else:
+            with autocast("cuda"):
+                images = text2img(
+                    prompt=prompt, height=process_size, width=process_size,
+                )["sample"]
+        return images[0]
+
+
+def get_model(token="", model_choice=""):
+    if "model" not in model:
+        if model_choice == "stablediffusion":
+            tmp = StableDiffusion(token)
+        else:
+            config_lst = ["--edit", "a.png", "--mask", "mask.png"]
+            if device == "cpu":
+                config_lst.append("--cpu")
+            tmp = GlidModel(config_lst)
+        model["model"] = tmp
+    return model["model"]
 
 
 def run_outpaint(
@@ -128,59 +219,33 @@ def run_outpaint(
     state,
 ):
     base64_str = "base64"
-    if True:
-        text2img, inpaint = get_model()
-        if enable_safety:
-            text2img.safety_checker = model["safety_checker"]
-            inpaint.safety_checker = model["safety_checker"]
-        else:
-            text2img.safety_checker = lambda images, **kwargs: (images, False)
-            inpaint.safety_checker = lambda images, **kwargs: (images, False)
-        data = base64.b64decode(str(sel_buffer_str))
-        pil = Image.open(io.BytesIO(data))
-        # base.output.clear_output()
-        # base.read_selection_from_buffer()
-        sel_buffer = np.array(pil)
-        img = sel_buffer[:, :, 0:3]
-        mask = sel_buffer[:, :, -1]
-        process_size = 512 if resize_check else model["sel_size"]
-        if mask.sum() > 0:
-            img, mask = functbl[fill_mode](img, mask)
-            init_image = Image.fromarray(img)
-            mask = 255 - mask
-            mask = skimage.measure.block_reduce(mask, (8, 8), np.max)
-            mask = mask.repeat(8, axis=0).repeat(8, axis=1)
-            mask_image = Image.fromarray(mask)
-            # mask_image=mask_image.filter(ImageFilter.GaussianBlur(radius = 8))
-            with autocast("cuda"):
-                images = inpaint(
-                    prompt=prompt_text,
-                    init_image=init_image.resize(
-                        (process_size, process_size), resample=SAMPLING_MODE
-                    ),
-                    mask_image=mask_image.resize((process_size, process_size)),
-                    strength=strength,
-                    num_inference_steps=step,
-                    guidance_scale=guidance,
-                )["sample"]
-        else:
-            with autocast("cuda"):
-                images = text2img(
-                    prompt=prompt_text, height=process_size, width=process_size,
-                )["sample"]
-        out = sel_buffer.copy()
-        out[:, :, 0:3] = np.array(
-            images[0].resize(
-                (model["sel_size"], model["sel_size"]), resample=SAMPLING_MODE,
-            )
-        )
-        out[:, :, -1] = 255
-        out_pil = Image.fromarray(out)
-        out_buffer = io.BytesIO()
-        out_pil.save(out_buffer, format="PNG")
-        out_buffer.seek(0)
-        base64_bytes = base64.b64encode(out_buffer.read())
-        base64_str = base64_bytes.decode("ascii")
+    data = base64.b64decode(str(sel_buffer_str))
+    pil = Image.open(io.BytesIO(data))
+    sel_buffer = np.array(pil)
+    cur_model = get_model()
+    image = cur_model.run(
+        image_pil=pil,
+        prompt=prompt_text,
+        guidance_scale=guidance,
+        strength=strength,
+        step=step,
+        resize_check=resize_check,
+        fill_mode=fill_mode,
+        enable_safety=enable_safety,
+        width=max(model["sel_size"],512),
+        height=max(model["sel_size"],512)
+    )
+    out = sel_buffer.copy()
+    out[:, :, 0:3] = np.array(
+        image.resize((model["sel_size"], model["sel_size"]), resample=SAMPLING_MODE,)
+    )
+    out[:, :, -1] = 255
+    out_pil = Image.fromarray(out)
+    out_buffer = io.BytesIO()
+    out_pil.save(out_buffer, format="PNG")
+    out_buffer.seek(0)
+    base64_bytes = base64.b64encode(out_buffer.read())
+    base64_str = base64_bytes.decode("ascii")
     return (
         gr.update(label=str(state + 1), value=base64_str,),
         gr.update(label="Prompt"),
@@ -225,6 +290,11 @@ with blocks as demo:
             label="Huggingface token",
             value=get_token(),
             placeholder="Input your token here",
+        )
+        model_selection = gr.Radio(
+            label="Model",
+            choices=["stablediffusion", "glid-3-xl-stable"],
+            value="glid-3-xl-stable",
         )
         canvas_width = gr.Number(
             label="Canvas width", value=1024, precision=0, elem_id="canvas_width"
@@ -318,12 +388,12 @@ with blocks as demo:
         _js=upload_button_js,
     )
 
-    def setup_func(token_val, width, height, size):
+    def setup_func(token_val, width, height, size, model_choice):
         model["width"] = width
         model["height"] = height
         model["sel_size"] = size
         try:
-            get_model(token_val)
+            get_model(token_val, model_choice)
         except Exception as e:
             print(e)
             return {token: gr.update(value=str(e))}
@@ -334,12 +404,12 @@ with blocks as demo:
             selection_size: gr.update(visible=False),
             setup_button: gr.update(visible=False),
             frame: gr.update(visible=True),
-            upload_button: gr.update(value="Upload"),
+            upload_button: gr.update(value="Upload Image"),
         }
 
     setup_button.click(
         fn=setup_func,
-        inputs=[token, canvas_width, canvas_height, selection_size],
+        inputs=[token, canvas_width, canvas_height, selection_size, model_selection],
         outputs=[
             token,
             canvas_width,

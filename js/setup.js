@@ -1,4 +1,4 @@
-function(token_val, width, height, size){
+function(token_val, width, height, size, model_choice){
     let app=document.querySelector("gradio-app").shadowRoot;
     app.querySelector("#sdinfframe").style.height=height+"px";
     let frame=app.querySelector("#sdinfframe").contentWindow.document;
@@ -18,5 +18,5 @@ function(token_val, width, height, size){
     {
         frame.querySelector("#draw").click();
     }
-    return [token_val, width, height, size];
+    return [token_val, width, height, size, model_choice];
 }
