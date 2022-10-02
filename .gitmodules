@@ -1,6 +1,3 @@
-[submodule "PyPatchMatch"]
-	path = PyPatchMatch
-	url = https://github.com/vacancy/PyPatchMatch
 [submodule "glid_3_xl_stable"]
 	path = glid_3_xl_stable
 	url = https://github.com/lkwq007/glid_3_xl_stable.git
