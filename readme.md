@@ -96,3 +96,5 @@ Watch the log for the url to open in your browser. Choose the one that starts wi
 The code of `perlin2d.py` is from https://stackoverflow.com/questions/42147776/producing-2d-perlin-noise-with-numpy/42154921#42154921 and is **not** included in the scope of LICENSE used in this repo.
 
 The submodule `glid_3_xl_stable` is based on https://github.com/Jack000/glid-3-xl-stable 
+
+The submodule `PyPatchMatch` is based on https://github.com/vacancy/PyPatchMatch
