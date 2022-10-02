@@ -16,7 +16,12 @@ import skimage.measure
 from utils import *
 
 sys.path.append("./glid_3_xl_stable")
-from glid3xlmodel import GlidModel
+
+USE_GLID = True
+try:
+    from glid3xlmodel import GlidModel
+except:
+    USE_GLID = False
 
 try:
     cuda_available = torch.cuda.is_available()
@@ -196,6 +201,8 @@ class StableDiffusion:
 
 def get_model(token="", model_choice=""):
     if "model" not in model:
+        if not USE_GLID:
+            model_choice = "stablediffusion"
         if model_choice == "stablediffusion":
             tmp = StableDiffusion(token)
         else:
@@ -298,15 +305,15 @@ with blocks as demo:
                 choices=["stablediffusion", "glid-3-xl-stable"],
                 value="stablediffusion",
             )
-        with gr.Column(scale=1,min_width=100):
+        with gr.Column(scale=1, min_width=100):
             canvas_width = gr.Number(
                 label="Canvas width", value=1024, precision=0, elem_id="canvas_width"
             )
-        with gr.Column(scale=1,min_width=100):
+        with gr.Column(scale=1, min_width=100):
             canvas_height = gr.Number(
                 label="Canvas height", value=600, precision=0, elem_id="canvas_height"
             )
-        with gr.Column(scale=1,min_width=100):
+        with gr.Column(scale=1, min_width=100):
             selection_size = gr.Number(
                 label="Selection box size",
                 value=256,
@@ -474,7 +481,13 @@ if __name__ == "__main__":
     parser.add_argument("--share", action="store_true", help="share this app?")
     args = parser.parse_args()
     if args.share:
-        demo.launch(share=True)
+        try:
+            import google.colab
+
+            IN_COLAB = True
+        except:
+            IN_COLAB = False
+        demo.launch(share=True, debug=IN_COLAB)
     else:
         demo.launch(server_name=args.host, server_port=args.port)
 
