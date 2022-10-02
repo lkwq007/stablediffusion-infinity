@@ -286,27 +286,27 @@ with blocks as demo:
     frame = gr.HTML(test(2), visible=False)
     # setup
     with gr.Row():
-        with gr.Column(scale=3, min_width=350):
+        with gr.Column(scale=4, min_width=350):
             token = gr.Textbox(
                 label="Huggingface token",
                 value=get_token(),
                 placeholder="Input your token here",
             )
-        with gr.Column(scale=3, min_width=350):
+        with gr.Column(scale=3, min_width=320):
             model_selection = gr.Radio(
                 label="Model",
                 choices=["stablediffusion", "glid-3-xl-stable"],
                 value="glid-3-xl-stable",
             )
-        with gr.Column(scale=1):
+        with gr.Column(scale=1,min_width=100):
             canvas_width = gr.Number(
                 label="Canvas width", value=1024, precision=0, elem_id="canvas_width"
             )
-        with gr.Column(scale=1):
+        with gr.Column(scale=1,min_width=100):
             canvas_height = gr.Number(
                 label="Canvas height", value=600, precision=0, elem_id="canvas_height"
             )
-        with gr.Column(scale=1):
+        with gr.Column(scale=1,min_width=100):
             selection_size = gr.Number(
                 label="Selection box size",
                 value=256,
@@ -413,7 +413,7 @@ with blocks as demo:
             setup_button: gr.update(visible=False),
             frame: gr.update(visible=True),
             upload_button: gr.update(value="Upload Image"),
-            model_selection: gr.update(visible=True),
+            model_selection: gr.update(visible=False),
         }
 
     setup_button.click(
