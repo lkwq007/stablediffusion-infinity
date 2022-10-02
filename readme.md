@@ -90,6 +90,8 @@ Watch the log for the url to open in your browser. Choose the one that starts wi
   - https://github.com/lkwq007/stablediffusion-infinity/issues/8#issuecomment-1248448453
 - What is the init_mode
   - init_mode indicates how to fill the empty/masked region, usually `patch_match` is better than others
+- Why not use `postMessage` for iframe interaction
+  - The iframe the gradio are in the same origin. For `postMessage` version, check out [gradio-space](https://github.com/lkwq007/stablediffusion-infinity/tree/gradio-space)
 
 ## Credit
 
