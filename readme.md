@@ -47,7 +47,9 @@ conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
 conda install scipy scikit-image
 conda install -c conda-forge diffusers transformers ftfy
 pip install opencv-python
-pip install gradio==3.4
+pip install gradio==3.4.0
+pip install pytorch-lightning==1.7.7 einops==0.4.1 omegaconf==2.2.3
+
 ```
 
 For windows, you may need to replace `pip install opencv-python` with `conda install -c conda-forge opencv`
