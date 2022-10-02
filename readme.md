@@ -29,7 +29,7 @@ The project now becomes a web app based on PyScript and Gradio. For Jupyter Note
 
 Pull requests are welcome for better UI control, ideas to achieve better results, or any other improvements.
 
-Update: the project supports [glid-3-xl-stable](https://github.com/Jack000/glid-3-xl-stable) as inpainting/outpainting model. 
+Update: the project supports [glid-3-xl-stable](https://github.com/Jack000/glid-3-xl-stable) as inpainting/outpainting model. Note that you have to restart the `app.py` to change model. 
 
 ## Setup environment
 setup with `environment.yml`
