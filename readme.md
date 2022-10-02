@@ -27,7 +27,9 @@ You may need to do prompt engineering or change the size of the selection box to
 
 The project now becomes a web app based on PyScript and Gradio. For Jupyter Notebook version, please check out the [ipycanvas](https://github.com/lkwq007/stablediffusion-infinity/tree/ipycanvas) branch. 
 
-Pull requests are welcome for better UI control, ideas to achieve better results, or any other improvements. 
+Pull requests are welcome for better UI control, ideas to achieve better results, or any other improvements.
+
+Update: the project supports [glid-3-xl-stable](https://github.com/Jack000/glid-3-xl-stable) as inpainting/outpainting model. 
 
 ## Setup environment
 setup with `environment.yml`
@@ -90,3 +92,5 @@ Watch the log for the url to open in your browser. Choose the one that starts wi
 ## Credit
 
 The code of `perlin2d.py` is from https://stackoverflow.com/questions/42147776/producing-2d-perlin-noise-with-numpy/42154921#42154921 and is **not** included in the scope of LICENSE used in this repo.
+
+The submodule `glid_3_xl_stable` is based on https://github.com/Jack000/glid-3-xl-stable 
