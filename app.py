@@ -232,8 +232,8 @@ def run_outpaint(
         resize_check=resize_check,
         fill_mode=fill_mode,
         enable_safety=enable_safety,
-        width=max(model["sel_size"],512),
-        height=max(model["sel_size"],512)
+        width=max(model["sel_size"], 512),
+        height=max(model["sel_size"], 512),
     )
     out = sel_buffer.copy()
     out[:, :, 0:3] = np.array(
@@ -286,25 +286,33 @@ with blocks as demo:
     frame = gr.HTML(test(2), visible=False)
     # setup
     with gr.Row():
-        token = gr.Textbox(
-            label="Huggingface token",
-            value=get_token(),
-            placeholder="Input your token here",
-        )
-        model_selection = gr.Radio(
-            label="Model",
-            choices=["stablediffusion", "glid-3-xl-stable"],
-            value="glid-3-xl-stable",
-        )
-        canvas_width = gr.Number(
-            label="Canvas width", value=1024, precision=0, elem_id="canvas_width"
-        )
-        canvas_height = gr.Number(
-            label="Canvas height", value=600, precision=0, elem_id="canvas_height"
-        )
-        selection_size = gr.Number(
-            label="Selection box size", value=256, precision=0, elem_id="selection_size"
-        )
+        with gr.Column(scale=3, min_width=350):
+            token = gr.Textbox(
+                label="Huggingface token",
+                value=get_token(),
+                placeholder="Input your token here",
+            )
+        with gr.Column(scale=3, min_width=350):
+            model_selection = gr.Radio(
+                label="Model",
+                choices=["stablediffusion", "glid-3-xl-stable"],
+                value="glid-3-xl-stable",
+            )
+        with gr.Column(scale=1):
+            canvas_width = gr.Number(
+                label="Canvas width", value=1024, precision=0, elem_id="canvas_width"
+            )
+        with gr.Column(scale=1):
+            canvas_height = gr.Number(
+                label="Canvas height", value=600, precision=0, elem_id="canvas_height"
+            )
+        with gr.Column(scale=1):
+            selection_size = gr.Number(
+                label="Selection box size",
+                value=256,
+                precision=0,
+                elem_id="selection_size",
+            )
     setup_button = gr.Button("Setup (may take a while)", variant="primary")
     with gr.Row():
         with gr.Column(scale=3, min_width=270):
@@ -405,6 +413,7 @@ with blocks as demo:
             setup_button: gr.update(visible=False),
             frame: gr.update(visible=True),
             upload_button: gr.update(value="Upload Image"),
+            model_selection: gr.update(visible=True),
         }
 
     setup_button.click(
@@ -418,6 +427,7 @@ with blocks as demo:
             setup_button,
             frame,
             upload_button,
+            model_selection,
         ],
         _js=setup_button_js,
     )
