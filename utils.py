@@ -10,14 +10,14 @@ import os
 from perlin2d import *
 
 patch_match_compiled = True
-if os.name != "nt":
+
+try:
+    from PyPatchMatch import patch_match
+except Exception as e:
     try:
-        from PyPatchMatch import patch_match
+        import patch_match
     except Exception as e:
-        try:
-            import patch_match
-        except Exception as e:
-            patch_match_compiled = False
+        patch_match_compiled = False
 
 try:
     patch_match
