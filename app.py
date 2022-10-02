@@ -157,8 +157,8 @@ class StableDiffusion:
     ):
         text2img, inpaint = self.text2img, self.inpaint
         if enable_safety:
-            text2img.safety_checker = model["safety_checker"]
-            inpaint.safety_checker = model["safety_checker"]
+            text2img.safety_checker = self.safety_checker
+            inpaint.safety_checker = self.safety_checker
         else:
             text2img.safety_checker = lambda images, **kwargs: (images, False)
             inpaint.safety_checker = lambda images, **kwargs: (images, False)
