@@ -296,7 +296,7 @@ with blocks as demo:
             model_selection = gr.Radio(
                 label="Model",
                 choices=["stablediffusion", "glid-3-xl-stable"],
-                value="glid-3-xl-stable",
+                value="stablediffusion",
             )
         with gr.Column(scale=1,min_width=100):
             canvas_width = gr.Number(
