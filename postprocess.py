@@ -35,11 +35,15 @@ from PIL import Image
 import numpy as np
 import skimage
 import skimage.measure
+import scipy
+import scipy.signal
+
 
 class PhotometricCorrection:
     def __init__(self):
         self.get_parser("cli")
         args=self.parser.parse_args(["--method","grid","-g","src","-s","a","-t","a","-o","a"])
+        args.mpi_sync_interval = getattr(args, "mpi_sync_interval", 0)
         self.args=args
         proc: BaseProcessor
         proc = GridProcessor(
@@ -60,13 +64,13 @@ class PhotometricCorrection:
     def run(self, original_image, inpainted_image):
         input_arr=np.array(original_image)
         output_arr=np.array(inpainted_image)
-        mask=input_arr[:,:,3:4]
+        mask=input_arr[:,:,-1]
         mask=255-mask
         mask = skimage.measure.block_reduce(mask, (8, 8), np.max)
         mask = mask.repeat(8, axis=0).repeat(8, axis=1)
+        mask = mask[:,:,np.newaxis].repeat(3,axis=2)
         src = output_arr[:,:,0:3]
         tgt = src.copy()
-        src, mask, tgt=0,0,0
         proc=self.proc
         args=self.args
         if proc.root:
@@ -74,16 +78,20 @@ class PhotometricCorrection:
         proc.sync()
         if proc.root:
             result = tgt
+            t = time.time()
         if args.p == 0:
             args.p = args.n
 
         for i in range(0, args.n, args.p):
             if proc.root:
                 result, err = proc.step(args.p)  # type: ignore
+                print(f"PIE: Iter {i + args.p}, abs error {err}")
             else:
                 proc.step(args.p)
 
         if proc.root:
+            dt = time.time() - t
+            print(f"Time elapsed: {dt:.4f}s")
             return result
 
 

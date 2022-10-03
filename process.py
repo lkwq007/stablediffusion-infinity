@@ -30,6 +30,9 @@ import numpy as np
 
 from fpie import np_solver
 
+import scipy
+import scipy.signal
+
 CPU_COUNT = os.cpu_count() or 1
 DEFAULT_BACKEND = "numpy"
 ALL_BACKEND = ["numpy"]
@@ -370,9 +373,10 @@ class GridProcessor(BaseProcessor):
         res[res > 0] = 1
         ylst, xlst = res.nonzero()
         for y, x in zip(ylst, xlst):
-            for yi in range(-1,2):
-                for xi in range(-1,2):
-                    grad[y+yi,x+xi]=0
+            grad[y,x]=0
+            # for yi in range(-1,2):
+                # for xi in range(-1,2):
+                    # grad[y+yi,x+xi]=0
     self.x0 = mask_on_tgt[0] + x0
     self.x1 = mask_on_tgt[0] + x1
     self.y0 = mask_on_tgt[1] + y0
