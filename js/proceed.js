@@ -6,6 +6,7 @@ function(sel_buffer_str,
     resize_check,
     fill_mode,
     enable_safety,
+    use_correction,
     state){
     sel_buffer = document.querySelector("gradio-app").shadowRoot.querySelector("#input textarea").value;
     return [
@@ -17,6 +18,7 @@ function(sel_buffer_str,
         resize_check,
         fill_mode,
         enable_safety,
+        use_correction,
         state
     ]
 }

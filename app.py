@@ -223,6 +223,7 @@ def run_outpaint(
     resize_check,
     fill_mode,
     enable_safety,
+    use_correction,
     state,
 ):
     base64_str = "base64"
@@ -242,10 +243,11 @@ def run_outpaint(
         width=max(model["sel_size"], 512),
         height=max(model["sel_size"], 512),
     )
+    resized_img = image.resize((model["sel_size"], model["sel_size"]), resample=SAMPLING_MODE,)
+    if use_correction:
+        resized_img = correction_func.run(pil, resized_img)
     out = sel_buffer.copy()
-    out[:, :, 0:3] = np.array(
-        image.resize((model["sel_size"], model["sel_size"]), resample=SAMPLING_MODE,)
-    )
+    out[:, :, 0:3] = np.array(resized_img)
     out[:, :, -1] = 255
     out_pil = Image.fromarray(out)
     out_buffer = io.BytesIO()
@@ -352,7 +354,7 @@ with blocks as demo:
             sd_step = gr.Number(label="Step", value=50, precision=0)
             sd_guidance = gr.Number(label="Guidance", value=7.5)
     with gr.Row():
-        with gr.Column(scale=4, min_width=600):
+        with gr.Column(scale=4, min_width=500):
             init_mode = gr.Radio(
                 label="Init mode",
                 choices=[
@@ -366,6 +368,8 @@ with blocks as demo:
                 value="patchmatch",
                 type="value",
             )
+        with gr.Column(scale=2, min_width=250):
+            postprocess_check = gr.Checkbox(label="Photometric Correction", value=True)
 
     proceed_button = gr.Button("Proceed", elem_id="proceed", visible=DEBUG_MODE)
     # sd pipeline parameters
@@ -455,6 +459,7 @@ with blocks as demo:
             sd_resize,
             init_mode,
             safety_check,
+            postprocess_check,
             model_output_state,
         ],
         outputs=[model_output, sd_prompt, model_output_state],

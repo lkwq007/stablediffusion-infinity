@@ -152,3 +152,10 @@ functbl = {
     "cv2_telea": cv2_telea,
     "mean_fill": mean_fill,
 }
+
+try:
+    from postprocess import PhotometricCorrection
+    correction_func = PhotometricCorrection()
+except:
+    def correction_func(a,b):
+        return b
