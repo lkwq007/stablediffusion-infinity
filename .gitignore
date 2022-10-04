@@ -4,5 +4,4 @@ Makefile
 build/
 csrc/
 .idea/
-travis.sh
-*.iml
+travis.shiml
