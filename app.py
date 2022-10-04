@@ -320,7 +320,7 @@ with blocks as demo:
                 precision=0,
                 elem_id="selection_size",
             )
-    setup_button = gr.Button("Setup (may take a while)", variant="primary")
+    setup_button = gr.Button("Click to Setup (may take a while)", variant="primary")
     with gr.Row():
         with gr.Column(scale=3, min_width=270):
             # canvas control
