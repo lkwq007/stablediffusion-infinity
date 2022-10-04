@@ -147,7 +147,7 @@ functbl = {
     "gaussian": gaussian_noise,
     "perlin": perlin_noise,
     "edge_pad": edge_pad,
-    "patchmatch": patch_match_func if (os.name != "nt" and patch_match_compiled) else edge_pad,
+    "patchmatch": patch_match_func if patch_match_compiled else edge_pad,
     "cv2_ns": cv2_ns,
     "cv2_telea": cv2_telea,
     "mean_fill": mean_fill,
