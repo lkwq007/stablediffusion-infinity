@@ -7,12 +7,14 @@ RUN apt-get update && \
       fonts-dejavu-core  \
       build-essential \
       libopencv-dev \
+      cmake \
+      vim \
       && apt-get clean
 
 COPY opencv.pc /usr/lib/pkgconfig/opencv.pc
 
-RUN useradd -ms /bin/bash user
+RUN useradd -ms /bin/bash user && mkdir /app && chown user:user /app
 USER user
-RUN mkdir ~/.huggingface && mkdir ~/app && conda init bash
-WORKDIR /home/user/app
+RUN mkdir ~/.huggingface && conda init bash
+WORKDIR /app
 EXPOSE 8888
