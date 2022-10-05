@@ -111,18 +111,18 @@ def save_token(token):
 
 
 class StableDiffusion:
-    def __init__(self, token=""):
+    def __init__(self, token="", model_name="CompVis/stable-diffusion-v1-4"):
         self.token = token
         if device == "cuda":
             text2img = StableDiffusionPipeline.from_pretrained(
-                "CompVis/stable-diffusion-v1-4",
+                model_name,
                 revision="fp16",
                 torch_dtype=torch.float16,
                 use_auth_token=token,
             ).to(device)
         else:
             text2img = StableDiffusionPipeline.from_pretrained(
-                "CompVis/stable-diffusion-v1-4", use_auth_token=token,
+                model_name, use_auth_token=token,
             ).to(device)
         if device == "mps":
             _ = text2img("", num_inference_steps=1)
@@ -201,10 +201,13 @@ class StableDiffusion:
 
 def get_model(token="", model_choice=""):
     if "model" not in model:
-        if not USE_GLID:
+        if not USE_GLID and model_choice == "glid-3-xl-stable":
             model_choice = "stablediffusion"
+        
         if model_choice == "stablediffusion":
             tmp = StableDiffusion(token)
+        elif model_choice == "waifudiffusion":
+            tmp = StableDiffusion(token=token, model_name="hakurei/waifu-diffusion")
         else:
             config_lst = ["--edit", "a.png", "--mask", "mask.png"]
             if device == "cpu":
@@ -304,8 +307,8 @@ with blocks as demo:
             )
         with gr.Column(scale=3, min_width=320):
             model_selection = gr.Radio(
-                label="Model",
-                choices=["stablediffusion", "glid-3-xl-stable"],
+                label="Choose a model here",
+                choices=["stablediffusion", "waifudiffusion", "glid-3-xl-stable"],
                 value="stablediffusion",
             )
         with gr.Column(scale=1, min_width=100):
@@ -370,7 +373,7 @@ with blocks as demo:
                 type="value",
             )
         with gr.Column(scale=2, min_width=250):
-            postprocess_check = gr.Checkbox(label="Photometric Correction", value=True)
+            postprocess_check = gr.Checkbox(label="Photometric Correction", value=False)
 
     proceed_button = gr.Button("Proceed", elem_id="proceed", visible=DEBUG_MODE)
     # sd pipeline parameters
