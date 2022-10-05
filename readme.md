@@ -70,9 +70,7 @@ python app.py
 This should get you started without needing to manually install anything, except for having an environment with Docker installed and an Nvidia GPU.
 This has been tested on Docker Desktop on Windows 10 using the WSL2 backend.
 
-First, update the .env file with your Huggingface token from https://huggingface.co/settings/tokens
-
-Open your shell that has docker and run these commands
+Open your linux shell that has docker and run these commands
 
 ```
 cd stablediffusion-infinity
