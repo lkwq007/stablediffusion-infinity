@@ -208,7 +208,7 @@ class InfCanvas:
             elif self.mouse_state == BRUSH_MODE:
                 if self.sel_dirty:
                     self.write_selection_to_buffer()
-                    # self.canvas[2].clear()
+                    self.canvas[2].clear()
                 self.buffer_dirty=True
                 bx0,by0=int(x)-self.grid_size//2,int(y)-self.grid_size//2
                 bx1,by1=bx0+self.grid_size,by0+self.grid_size
@@ -478,7 +478,7 @@ class InfCanvas:
         self.sel_buffer = self.sel_buffer_bak.copy()
         self.buffer_dirty = True
         self.buffer_updated = True
-        self.canvas[2].clear()
+        # self.canvas[2].clear()
 
     def read_selection_from_buffer(self):
         x0, y0 = self.cursor

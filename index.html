@@ -119,6 +119,8 @@ async def draw_canvas_func(event):
 async def export_func(event):
     base=base_lst[0]
     arr=base.export()
+    base.draw_buffer()
+    base.canvas[2].clear()
     base64_str = base.numpy_to_base64(arr)
     time_str = time.strftime("%Y%m%d_%H%M%S")
     console.log(f"Canvas saved to outpaint_{time_str}.png")
