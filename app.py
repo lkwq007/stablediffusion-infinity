@@ -111,18 +111,18 @@ def save_token(token):
 
 
 class StableDiffusion:
-    def __init__(self, token=""):
+    def __init__(self, token="", model_name="CompVis/stable-diffusion-v1-4"):
         self.token = token
         if device == "cuda":
             text2img = StableDiffusionPipeline.from_pretrained(
-                "CompVis/stable-diffusion-v1-4",
+                model_name,
                 revision="fp16",
                 torch_dtype=torch.float16,
                 use_auth_token=token,
             ).to(device)
         else:
             text2img = StableDiffusionPipeline.from_pretrained(
-                "CompVis/stable-diffusion-v1-4", use_auth_token=token,
+                model_name, use_auth_token=token,
             ).to(device)
         if device == "mps":
             _ = text2img("", num_inference_steps=1)
@@ -201,10 +201,13 @@ class StableDiffusion:
 
 def get_model(token="", model_choice=""):
     if "model" not in model:
-        if not USE_GLID:
+        if not USE_GLID and model_choice == "glid-3-xl-stable":
             model_choice = "stablediffusion"
+        
         if model_choice == "stablediffusion":
             tmp = StableDiffusion(token)
+        elif model_choice == "waifudiffusion":
+            tmp = StableDiffusion(token=token, model_name="hakurei/waifu-diffusion")
         else:
             config_lst = ["--edit", "a.png", "--mask", "mask.png"]
             if device == "cpu":
@@ -223,6 +226,7 @@ def run_outpaint(
     resize_check,
     fill_mode,
     enable_safety,
+    use_correction,
     state,
 ):
     base64_str = "base64"
@@ -242,10 +246,12 @@ def run_outpaint(
         width=max(model["sel_size"], 512),
         height=max(model["sel_size"], 512),
     )
+    if use_correction:
+        image = correction_func.run(pil.resize(image.size), image)
+        image = Image.fromarray(image)
+    resized_img = image.resize((model["sel_size"], model["sel_size"]), resample=SAMPLING_MODE,)
     out = sel_buffer.copy()
-    out[:, :, 0:3] = np.array(
-        image.resize((model["sel_size"], model["sel_size"]), resample=SAMPLING_MODE,)
-    )
+    out[:, :, 0:3] = np.array(resized_img)
     out[:, :, -1] = 255
     out_pil = Image.fromarray(out)
     out_buffer = io.BytesIO()
@@ -301,8 +307,8 @@ with blocks as demo:
             )
         with gr.Column(scale=3, min_width=320):
             model_selection = gr.Radio(
-                label="Model",
-                choices=["stablediffusion", "glid-3-xl-stable"],
+                label="Choose a model here",
+                choices=["stablediffusion", "waifudiffusion", "glid-3-xl-stable"],
                 value="stablediffusion",
             )
         with gr.Column(scale=1, min_width=100):
@@ -352,7 +358,7 @@ with blocks as demo:
             sd_step = gr.Number(label="Step", value=50, precision=0)
             sd_guidance = gr.Number(label="Guidance", value=7.5)
     with gr.Row():
-        with gr.Column(scale=4, min_width=600):
+        with gr.Column(scale=4, min_width=500):
             init_mode = gr.Radio(
                 label="Init mode",
                 choices=[
@@ -366,6 +372,8 @@ with blocks as demo:
                 value="patchmatch",
                 type="value",
             )
+        with gr.Column(scale=2, min_width=250):
+            postprocess_check = gr.Checkbox(label="Photometric Correction", value=False)
 
     proceed_button = gr.Button("Proceed", elem_id="proceed", visible=DEBUG_MODE)
     # sd pipeline parameters
@@ -455,6 +463,7 @@ with blocks as demo:
             sd_resize,
             init_mode,
             safety_check,
+            postprocess_check,
             model_output_state,
         ],
         outputs=[model_output, sd_prompt, model_output_state],
