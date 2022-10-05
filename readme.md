@@ -32,6 +32,8 @@ Pull requests are welcome for better UI control, ideas to achieve better results
 
 Update: the project also supports [glid-3-xl-stable](https://github.com/Jack000/glid-3-xl-stable) as inpainting/outpainting model. Note that you have to restart the `app.py` to change model. (not supported on colab)
 
+Update: the project add photometric correction to suppress seams, to use this feature, you need to install [fpie](https://github.com/Trinkle23897/Fast-Poisson-Image-Editing): `pip install fpie` (Linux/MacOS only)
+
 ## Setup environment
 setup with `environment.yml`
 ```
@@ -81,14 +83,14 @@ Open "http://localhost:8888" in your browser ( even though the log says http://0
 
 ## FAQs
 
-- Troubleshooting on Windows: 
+- Troubleshooting on Windows (outdated): 
   - https://github.com/lkwq007/stablediffusion-infinity/issues/12
-- False positive rate of safety checker is quite high: 
-  - https://github.com/lkwq007/stablediffusion-infinity/issues/8#issuecomment-1248448453
+- The result is a black square: 
+  - False positive rate of safety checker is relatively high, you may disable the safety_checker
 - What is the init_mode
   - init_mode indicates how to fill the empty/masked region, usually `patch_match` is better than others
 - Why not use `postMessage` for iframe interaction
-  - The iframe the gradio are in the same origin. For `postMessage` version, check out [gradio-space](https://github.com/lkwq007/stablediffusion-infinity/tree/gradio-space)
+  - The iframe and the gradio are in the same origin. For `postMessage` version, check out [gradio-space](https://github.com/lkwq007/stablediffusion-infinity/tree/gradio-space) version
 
 ## Credit
 
@@ -97,3 +99,5 @@ The code of `perlin2d.py` is from https://stackoverflow.com/questions/42147776/p
 The submodule `glid_3_xl_stable` is based on https://github.com/Jack000/glid-3-xl-stable 
 
 The submodule `PyPatchMatch` is based on https://github.com/vacancy/PyPatchMatch
+
+The code of `postprocess.py` and `process.py` is modified based on https://github.com/Trinkle23897/Fast-Poisson-Image-Editing
