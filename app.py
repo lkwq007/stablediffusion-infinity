@@ -243,9 +243,10 @@ def run_outpaint(
         width=max(model["sel_size"], 512),
         height=max(model["sel_size"], 512),
     )
-    resized_img = image.resize((model["sel_size"], model["sel_size"]), resample=SAMPLING_MODE,)
     if use_correction:
-        resized_img = correction_func.run(pil, resized_img)
+        image = correction_func.run(pil.resize(image.size), image)
+        image = Image.fromarray(image)
+    resized_img = image.resize((model["sel_size"], model["sel_size"]), resample=SAMPLING_MODE,)
     out = sel_buffer.copy()
     out[:, :, 0:3] = np.array(resized_img)
     out[:, :, -1] = 255
