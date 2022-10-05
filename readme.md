@@ -79,9 +79,7 @@ cd stablediffusion-infinity
 docker-compose build
 docker-compose up
 ```
-
-Watch the log for the url to open in your browser. Choose the one that starts with http://127.0.0.1:8888/
-
+Open "http://localhost:8888" in your browser ( even though the log says http://0.0.0.0:8888 )
 
 ## FAQs
 

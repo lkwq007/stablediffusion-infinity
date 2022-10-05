@@ -7,8 +7,6 @@ services:
     stdin_open: true
     tty: true
     command: "/app/docker/entrypoint.sh"
-    environment:
-      - HUGGINGFACE_TOKEN
     volumes:
       - .:/app
       - user_home:/home/user

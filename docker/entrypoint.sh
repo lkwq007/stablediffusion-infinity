@@ -1,15 +1,8 @@
 #!/bin/bash
 
-set -euxo pipefail
 cd /app
 
-if [ "$HUGGINGFACE_TOKEN" = "" ] ||  [ "$HUGGINGFACE_TOKEN" = "your_token_here" ] ; then
-  echo "Missing HUGGINGFACE_TOKEN, visit https://huggingface.co/settings/tokens and put it into the stablediffusion-infinity/.env file."
-  echo "or set and pass the HUGGINGFACE_TOKEN environment variable."
-  exit 1
-fi
-
-echo -n "$HUGGINGFACE_TOKEN" > /home/user/.huggingface/token
+set -euxo pipefail
 
 set -x
 
