@@ -67,19 +67,17 @@ conda activate sd-inf
 python app.py
 ```
 
-## Running with Docker
+## Running with Docker and NVIDIA GPU
 
-This should get you started without needing to manually install anything, except for having an environment with Docker installed and an Nvidia GPU.
-This has been tested on Docker Desktop on Windows 10 using the WSL2 backend.
-
-Open your linux shell that has docker and run these commands
+Native Linux or Windows 10,11 while using the Ubuntu command line app:
 
 ```
-cd stablediffusion-infinity
-docker-compose build
-docker-compose up
+cd /mnt/c/PATH-TO-YOUR/stablediffusion-infinity
+./docker/docker-run.sh
 ```
 Open "http://localhost:8888" in your browser ( even though the log says http://0.0.0.0:8888 )
+
+On Windows 10 or 11 you can follow this guide to setting up Docker with WSL2 https://www.youtube.com/watch?v=PB7zM3JrgkI
 
 ## FAQs
 
@@ -100,4 +98,4 @@ The submodule `glid_3_xl_stable` is based on https://github.com/Jack000/glid-3-x
 
 The submodule `PyPatchMatch` is based on https://github.com/vacancy/PyPatchMatch
 
-The code of `postprocess.py` and `process.py` is modified based on https://github.com/Trinkle23897/Fast-Poisson-Image-Editing
+The code of `postprocess.py` and `process.py` is modified based on https://github.com/Trinkle23897/Fast-Poisson-Image-Editingg
