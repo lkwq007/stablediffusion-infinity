@@ -69,7 +69,13 @@ class PhotometricCorrection:
         mask = skimage.measure.block_reduce(mask, (8, 8), np.max)
         mask = mask.repeat(8, axis=0).repeat(8, axis=1)
         mask = mask[:,:,np.newaxis].repeat(3,axis=2)
-        src = output_arr[:,:,0:3]
+        nmask=mask.copy()
+        output_arr2=output_arr[:,:,0:3].copy()
+        input_arr2=input_arr[:,:,0:3].copy()
+        output_arr2[nmask<128]=0
+        input_arr2[nmask>=128]=0
+        output_arr2+=input_arr2
+        src = output_arr2[:,:,0:3]
         tgt = src.copy()
         proc=self.proc
         args=self.args

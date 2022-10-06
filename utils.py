@@ -22,7 +22,7 @@ except Exception as e:
 try:
     patch_match
 except NameError:
-    print("patch_match compiling failed")
+    print("patch_match compiling failed, will fall back to edge_pad")
     patch_match_compiled = False
 
 
@@ -157,7 +157,7 @@ try:
     from postprocess import PhotometricCorrection
     correction_func = PhotometricCorrection()
 except Exception as e:
-    print(e)
+    print(e, "so PhotometricCorrection is disabled")
     class DummyCorrection:
         def __init__(self):
             pass
