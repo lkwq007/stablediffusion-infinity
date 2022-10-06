@@ -67,19 +67,27 @@ conda activate sd-inf
 python app.py
 ```
 
-## Running with Docker
+## Running with Docker on Windows or Linux with NVIDIA GPU
 
-This should get you started without needing to manually install anything, except for having an environment with Docker installed and an Nvidia GPU.
-This has been tested on Docker Desktop on Windows 10 using the WSL2 backend.
+On Windows 10 or 11 you can follow this guide to setting up Docker with WSL2 https://www.youtube.com/watch?v=PB7zM3JrgkI
 
-Open your linux shell that has docker and run these commands
+Native Linux
 
 ```
-cd stablediffusion-infinity
-docker-compose build
-docker-compose up
+cd stablediffusion-infinity/docker
+./docker-run.sh
 ```
+
+Windows 10,11 with WSL2 shell:
+- open windows Command Prompt, type "bash"
+- once in bash, type:
+```
+cd /mnt/c/PATH-TO-YOUR/stablediffusion-infinity/docker
+./docker-run.sh
+```
+
 Open "http://localhost:8888" in your browser ( even though the log says http://0.0.0.0:8888 )
+
 
 ## FAQs
 

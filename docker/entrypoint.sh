@@ -6,8 +6,7 @@ set -euxo pipefail
 
 set -x
 
-git submodule init
-git submodule update
+git submodule update --init --recursive
 git config --global credential.helper store
 if ! conda env list | grep sd-inf ; then
     echo "Creating environment, it may appear to freeze for a few minutes..."
