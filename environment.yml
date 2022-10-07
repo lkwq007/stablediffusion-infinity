@@ -244,7 +244,7 @@ dependencies:
   - tornado=6.2=py310h5764c6d_0
   - tqdm=4.64.1=pyhd8ed1ab_0
   - traitlets=5.4.0=pyhd8ed1ab_0
-  - transformers=4.22.1=pyhd8ed1ab_0
+  - transformers=4.22.2=pyhd8ed1ab_0
   - typeguard=2.13.3=pyhd8ed1ab_0
   - typing-extensions=4.3.0=py310h06a4308_0
   - typing_extensions=4.3.0=py310h06a4308_0
