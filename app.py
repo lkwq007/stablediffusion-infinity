@@ -349,11 +349,10 @@ with blocks as demo:
                     undo_button = gr.Button(value="↶")
         with gr.Column(scale=3, min_width=270):
             sd_prompt = gr.Textbox(
-                label="Prompt", placeholder="input your prompt here!", lines=4
+                label="Prompt", placeholder="input your prompt here!", lines=2
             )
-        with gr.Column(scale=3, min_width=270):
             sd_negative_prompt = gr.Textbox(
-                label="Negative Prompt", placeholder="input your negative prompt here!", lines=4
+                label="Negative Prompt", placeholder="input your negative prompt here!", lines=2
             )
         with gr.Column(scale=2, min_width=150):
             with gr.Box():
