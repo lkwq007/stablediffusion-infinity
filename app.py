@@ -152,6 +152,7 @@ class StableDiffusion:
         self,
         image_pil,
         prompt="",
+        negative_prompt="",
         guidance_scale=7.5,
         resize_check=True,
         enable_safety=True,
@@ -183,6 +184,7 @@ class StableDiffusion:
             with autocast("cuda"):
                 images = inpaint(
                     prompt=prompt,
+                    negative_prompt=negative_prompt, ## only for diffusers version > 0.3.0
                     init_image=init_image.resize(
                         (process_size, process_size), resample=SAMPLING_MODE
                     ),
@@ -194,7 +196,7 @@ class StableDiffusion:
         else:
             with autocast("cuda"):
                 images = text2img(
-                    prompt=prompt, height=process_size, width=process_size,
+                    prompt=prompt, negative_prompt=negative_prompt, height=process_size, width=process_size,
                 )["sample"]
         return images[0]
 
@@ -220,6 +222,7 @@ def get_model(token="", model_choice=""):
 def run_outpaint(
     sel_buffer_str,
     prompt_text,
+    negative_prompt_text,
     strength,
     guidance,
     step,
@@ -237,6 +240,7 @@ def run_outpaint(
     image = cur_model.run(
         image_pil=pil,
         prompt=prompt_text,
+        negative_prompt=negative_prompt_text,
         guidance_scale=guidance,
         strength=strength,
         step=step,
@@ -345,7 +349,11 @@ with blocks as demo:
                     undo_button = gr.Button(value="↶")
         with gr.Column(scale=3, min_width=270):
             sd_prompt = gr.Textbox(
-                label="Prompt", placeholder="input your prompt here", lines=4
+                label="Prompt", placeholder="input your prompt here!", lines=4
+            )
+        with gr.Column(scale=3, min_width=270):
+            sd_negative_prompt = gr.Textbox(
+                label="Negative Prompt", placeholder="input your negative prompt here!", lines=4
             )
         with gr.Column(scale=2, min_width=150):
             with gr.Box():
@@ -457,6 +465,7 @@ with blocks as demo:
         inputs=[
             model_input,
             sd_prompt,
+            sd_negative_prompt,
             sd_strength,
             sd_guidance,
             sd_step,

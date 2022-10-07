@@ -263,6 +263,12 @@ class InfCanvas:
             description="Prompt:",
             disabled=False,
         )
+        self.text_input_negative = widgets.Textarea(
+            value="",
+            placeholder="input your negative prompt here",
+            description="Negative Prompt:",
+            disabled=False,
+        )
         self.run_button = widgets.Button(
             description="Outpaint",
             tooltip="Run outpainting",
@@ -334,14 +340,14 @@ class InfCanvas:
                 self.test_button,
                 self.mode_button,
                 self.canvas,
-                widgets.HBox([self.run_button, self.text_input]),
+                widgets.HBox([self.run_button, self.text_input, self.text_input_negative]),
                 self.output,
             ]
         return [
             self.fill_button,
             self.canvas,
             widgets.HBox(
-                [self.mode_button, self.run_button, self.export_button, self.text_input]
+                [self.mode_button, self.run_button, self.export_button, self.text_input, self.text_input_negative]
             ),
             self.output,
         ]
