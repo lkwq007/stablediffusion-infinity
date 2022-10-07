@@ -8,7 +8,8 @@ assignees: ''
 ---
 
 **Describe the bug**
-A clear and concise description of what the bug is.
+A clear and concise description of what the bug is. 
+For setup problems or dependencies problems, please post in Q&A in Discussions
 
 **To Reproduce**
 Steps to reproduce the behavior:
