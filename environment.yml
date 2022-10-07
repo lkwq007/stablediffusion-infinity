@@ -55,7 +55,7 @@ dependencies:
   - debugpy=1.6.0=py310hd8f1fbe_0
   - decorator=5.1.1=pyhd8ed1ab_0
   - defusedxml=0.7.1=pyhd8ed1ab_0
-  - diffusers=0.3.0=pyhd8ed1ab_0
+  - diffusers=0.4.0=pyhd8ed1ab_0
   - dill=0.3.5.1=pyhd8ed1ab_0
   - docstring-to-markdown=0.10=pyhd8ed1ab_0
   - entrypoints=0.4=pyhd8ed1ab_0
@@ -299,6 +299,7 @@ dependencies:
     - numba==0.56.2
     - oauthlib==3.2.1
     - omegaconf==2.2.3
+    - opencv-python==4.6.0.66
     - opencv-python-headless==4.6.0.66
     - orjson==3.8.0
     - paramiko==2.11.0
