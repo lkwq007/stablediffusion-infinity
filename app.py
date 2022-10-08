@@ -15,6 +15,8 @@ import skimage
 import skimage.measure
 from utils import *
 
+USE_NEW_DIFFUSERS = diffusers.__version__>="0.4.0"
+
 sys.path.append("./glid_3_xl_stable")
 
 USE_GLID = True
@@ -181,10 +183,14 @@ class StableDiffusion:
             mask = mask.repeat(8, axis=0).repeat(8, axis=1)
             mask_image = Image.fromarray(mask)
             # mask_image=mask_image.filter(ImageFilter.GaussianBlur(radius = 8))
+            if USE_NEW_DIFFUSERS:
+                extra_kwargs={"negative_prompt": negative_prompt}
+            else:
+                extra_kwargs={}
             with autocast("cuda"):
                 images = inpaint(
                     prompt=prompt,
-                    negative_prompt=negative_prompt, ## only for diffusers version > 0.3.0
+                    # negative_prompt=negative_prompt, ## only for diffusers version > 0.3.0
                     init_image=init_image.resize(
                         (process_size, process_size), resample=SAMPLING_MODE
                     ),
@@ -192,6 +198,7 @@ class StableDiffusion:
                     strength=strength,
                     num_inference_steps=step,
                     guidance_scale=guidance_scale,
+                    **extra_kwargs
                 )["sample"]
         else:
             with autocast("cuda"):
