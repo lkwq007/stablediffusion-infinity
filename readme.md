@@ -27,9 +27,9 @@ Update: the project add photometric correction to suppress seams, to use this fe
 
 ### Get Started
 
-- Setup for Windows: [setup_guide](./docs/setup_guide.md#setup-with-windows)
-- Setup for Linux: [setup_guide](./docs/setup_guide.md#setup-with-linux)
-- Setup for MacOS: [setup_guide](./docs/setup_guide.md#setup-with-macos)
+- Setup for Windows: [setup_guide](./docs/setup_guide.md#windows)
+- Setup for Linux: [setup_guide](./docs/setup_guide.md#linux)
+- Setup for MacOS: [setup_guide](./docs/setup_guide.md#macos)
 - Running with Docker on Windows or Linux with NVIDIA GPU: [run_with_docker](./docs/run_with_docker.md)
 
 ### FAQs

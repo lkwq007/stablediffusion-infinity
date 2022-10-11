@@ -6,12 +6,6 @@ Please install conda at first ([miniconda](https://docs.conda.io/en/latest/minic
 - [Setup with Windows](#windows)
 - [Setup with MacOS](#macos)
 
-After setup the environment, you can run stablediffusion-infinity with following commands:
-```
-conda activate sd-inf
-python app.py
-```
-
 ## Setup with Linux <a name="linux"></a>
 
 ### conda env
@@ -34,6 +28,12 @@ pip install gradio==3.4.0
 pip install pytorch-lightning==1.7.7 einops==0.4.1 omegaconf==2.2.3
 ```
 
+After setup the environment, you can run stablediffusion-infinity with following commands:
+```
+conda activate sd-inf
+python app.py
+```
+
 ### CPP library (optional)
 
 Note that `opencv` library (e.g. `libopencv-dev`/`opencv-devel`, the package name may differ on different distributions) is required for `PyPatchMatch`. You may need to install `opencv` by yourself. If no `opencv` installed, the `patch_match` option (usually better quality) won't work. 
@@ -54,6 +54,11 @@ pip install pytorch-lightning==1.7.7 einops==0.4.1 omegaconf==2.2.3
 
 For windows, you may need to replace `pip install opencv-python` with `conda install -c conda-forge opencv`
 
+After setup the environment, you can run stablediffusion-infinity with following commands:
+```
+conda activate sd-inf
+python app.py
+```
 ## Setup with MacOS <a name="macos"></a>
 
 ### conda env
@@ -66,6 +71,12 @@ conda install -c conda-forge diffusers transformers ftfy
 pip install opencv-python
 pip install gradio==3.4.0
 pip install pytorch-lightning==1.7.7 einops==0.4.1 omegaconf==2.2.3
+```
+
+After setup the environment, you can run stablediffusion-infinity with following commands:
+```
+conda activate sd-inf
+python app.py
 ```
 ### CPP library (optional)
 
