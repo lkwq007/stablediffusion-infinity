@@ -364,7 +364,7 @@ with blocks as demo:
             )
         with gr.Column(scale=2, min_width=150):
             with gr.Box():
-                sd_resize = gr.Checkbox(label="Resize input to 515x512", value=True)
+                sd_resize = gr.Checkbox(label="Resize input to 512x512", value=True)
                 safety_check = gr.Checkbox(label="Enable Safety Checker", value=True)
             sd_strength = gr.Slider(
                 label="Strength", minimum=0.0, maximum=1.0, value=0.75, step=0.01
