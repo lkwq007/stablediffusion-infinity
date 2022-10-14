@@ -371,9 +371,10 @@ class GridProcessor(BaseProcessor):
         res[nmask < 1] = 0
         res[res == 9] = 0
         res[res > 0] = 1
-        ylst, xlst = res.nonzero()
-        for y, x in zip(ylst, xlst):
-            grad[y,x]=0
+        grad[res>0]=0
+        # ylst, xlst = res.nonzero()
+        # for y, x in zip(ylst, xlst):
+        #     grad[y,x]=0
             # for yi in range(-1,2):
                 # for xi in range(-1,2):
                     # grad[y+yi,x+xi]=0

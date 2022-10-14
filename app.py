@@ -7,7 +7,11 @@ import numpy as np
 import torch
 from torch import autocast
 import diffusers
-from diffusers import StableDiffusionPipeline, StableDiffusionInpaintPipeline
+from diffusers import (
+    StableDiffusionPipeline,
+    StableDiffusionInpaintPipeline,
+    StableDiffusionImg2ImgPipeline,
+)
 from PIL import Image
 from PIL import ImageOps
 import gradio as gr
@@ -16,7 +20,7 @@ import skimage
 import skimage.measure
 from utils import *
 
-USE_NEW_DIFFUSERS = diffusers.__version__>="0.4.0"
+USE_NEW_DIFFUSERS = diffusers.__version__ >= "0.4.0"
 
 sys.path.append("./glid_3_xl_stable")
 
@@ -139,6 +143,15 @@ class StableDiffusion:
             safety_checker=text2img.safety_checker,
             feature_extractor=text2img.feature_extractor,
         ).to(device)
+        img2img = StableDiffusionImg2ImgPipeline(
+            vae=text2img.vae,
+            text_encoder=text2img.text_encoder,
+            tokenizer=text2img.tokenizer,
+            unet=text2img.unet,
+            scheduler=text2img.scheduler,
+            safety_checker=text2img.safety_checker,
+            feature_extractor=text2img.feature_extractor,
+        ).to(device)
         save_token(token)
         try:
             total_memory = torch.cuda.get_device_properties(0).total_memory // (
@@ -150,6 +163,7 @@ class StableDiffusion:
             pass
         self.text2img = text2img
         self.inpaint = inpaint
+        self.img2img = img2img
 
     def run(
         self,
@@ -162,21 +176,52 @@ class StableDiffusion:
         fill_mode="patchmatch",
         strength=0.75,
         step=50,
+        enable_img2img=False,
+        use_seed=False,
+        seed_val=0,
+        generate_num=1,
+        scheduler=None,
+        scheduler_eta=0.0,
         **kwargs,
     ):
-        text2img, inpaint = self.text2img, self.inpaint
+        text2img, inpaint, img2img = self.text2img, self.inpaint, self.img2img
         if enable_safety:
             text2img.safety_checker = self.safety_checker
             inpaint.safety_checker = self.safety_checker
+            img2img.safety_checker = self.safety_checker
         else:
             text2img.safety_checker = lambda images, **kwargs: (images, False)
             inpaint.safety_checker = lambda images, **kwargs: (images, False)
+            img2img.safety_checker = lambda images, **kwargs: (images, False)
 
         sel_buffer = np.array(image_pil)
         img = sel_buffer[:, :, 0:3]
         mask = sel_buffer[:, :, -1]
+        nmask = 255 - mask
         process_size = 512 if resize_check else model["sel_size"]
-        if mask.sum() > 0:
+        extra_kwargs = {
+            "num_inference_steps": step,
+            "guidance_scale": guidance_scale,
+            "eta": scheduler_eta,
+        }
+        if USE_NEW_DIFFUSERS:
+            extra_kwargs["negative_prompt"] = negative_prompt
+            extra_kwargs["num_images_per_prompt"] = generate_num
+        if use_seed:
+            generator = torch.Generator(text2img.device).manual_seed(seed_val)
+            extra_kwargs["generator"] = generator
+        if nmask.sum() < 1 and enable_img2img:
+            init_image = Image.fromarray(img)
+            with autocast("cuda"):
+                images = img2img(
+                    prompt=prompt,
+                    init_image=init_image.resize(
+                        (process_size, process_size), resample=SAMPLING_MODE
+                    ),
+                    strength=strength,
+                    **extra_kwargs,
+                )["sample"]
+        elif mask.sum() > 0:
             img, mask = functbl[fill_mode](img, mask)
             init_image = Image.fromarray(img)
             mask = 255 - mask
@@ -184,36 +229,32 @@ class StableDiffusion:
             mask = mask.repeat(8, axis=0).repeat(8, axis=1)
             mask_image = Image.fromarray(mask)
             # mask_image=mask_image.filter(ImageFilter.GaussianBlur(radius = 8))
-            if USE_NEW_DIFFUSERS:
-                extra_kwargs={"negative_prompt": negative_prompt}
-            else:
-                extra_kwargs={}
             with autocast("cuda"):
                 images = inpaint(
                     prompt=prompt,
-                    # negative_prompt=negative_prompt, ## only for diffusers version > 0.3.0
                     init_image=init_image.resize(
                         (process_size, process_size), resample=SAMPLING_MODE
                     ),
                     mask_image=mask_image.resize((process_size, process_size)),
                     strength=strength,
-                    num_inference_steps=step,
-                    guidance_scale=guidance_scale,
-                    **extra_kwargs
+                    **extra_kwargs,
                 )["sample"]
         else:
             with autocast("cuda"):
                 images = text2img(
-                    prompt=prompt, negative_prompt=negative_prompt, height=process_size, width=process_size,
+                    prompt=prompt,
+                    height=process_size,
+                    width=process_size,
+                    **extra_kwargs,
                 )["sample"]
-        return images[0]
+        return images
 
 
 def get_model(token="", model_choice=""):
     if "model" not in model:
         if not USE_GLID and model_choice == "glid-3-xl-stable":
             model_choice = "stablediffusion"
-        
+
         if model_choice == "stablediffusion":
             tmp = StableDiffusion(token)
         elif model_choice == "waifudiffusion":
@@ -238,6 +279,12 @@ def run_outpaint(
     fill_mode,
     enable_safety,
     use_correction,
+    enable_img2img,
+    use_seed,
+    seed_val,
+    generate_num,
+    scheduler,
+    scheduler_eta,
     state,
 ):
     base64_str = "base64"
@@ -255,13 +302,21 @@ def run_outpaint(
         resize_check=resize_check,
         fill_mode=fill_mode,
         enable_safety=enable_safety,
+        use_seed=use_seed,
+        seed_val=seed_val,
+        generate_num=generate_num,
+        scheduler=scheduler,
+        scheduler_eta=scheduler_eta,
+        enable_img2img=enable_img2img,
         width=max(model["sel_size"], 512),
         height=max(model["sel_size"], 512),
     )
     if use_correction:
         image = correction_func.run(pil.resize(image.size), image)
         image = Image.fromarray(image)
-    resized_img = image.resize((model["sel_size"], model["sel_size"]), resample=SAMPLING_MODE,)
+    resized_img = image.resize(
+        (model["sel_size"], model["sel_size"]), resample=SAMPLING_MODE,
+    )
     out = sel_buffer.copy()
     out[:, :, 0:3] = np.array(resized_img)
     out[:, :, -1] = 255
@@ -360,7 +415,9 @@ with blocks as demo:
                 label="Prompt", placeholder="input your prompt here!", lines=2
             )
             sd_negative_prompt = gr.Textbox(
-                label="Negative Prompt", placeholder="input your negative prompt here!", lines=2
+                label="Negative Prompt",
+                placeholder="input your negative prompt here!",
+                lines=2,
             )
         with gr.Column(scale=2, min_width=150):
             with gr.Box():
@@ -389,7 +446,14 @@ with blocks as demo:
             )
         with gr.Column(scale=2, min_width=250):
             postprocess_check = gr.Checkbox(label="Photometric Correction", value=False)
-
+    with gr.Row():
+        sd_img2img = gr.Checkbox(label="Img2Img", value=False)
+        sd_random_seed_button = gr.Button("Random Seed")
+        sd_use_seed = gr.Checkbox(label="Use seed", value=False)
+        sd_seed_val = gr.Number(label="Seed", value=0, precision=0)
+        sd_generate_num = gr.Number(label="Generation number", value=1, precision=0)
+        sd_scheduler = gr.Dropdown(["a", "b"], label="Scheduler", value="a")
+        sd_scheduler_eta = gr.Number(label="Eta", value=0.0)
     proceed_button = gr.Button("Proceed", elem_id="proceed", visible=DEBUG_MODE)
     # sd pipeline parameters
     with gr.Accordion("Upload image", open=False):
@@ -480,6 +544,12 @@ with blocks as demo:
             init_mode,
             safety_check,
             postprocess_check,
+            sd_img2img,
+            sd_use_seed,
+            sd_seed_val,
+            sd_generate_num,
+            sd_scheduler,
+            sd_scheduler_eta,
             model_output_state,
         ],
         outputs=[model_output, sd_prompt, model_output_state],

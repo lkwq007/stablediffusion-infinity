@@ -8,6 +8,12 @@ function(sel_buffer_str,
     fill_mode,
     enable_safety,
     use_correction,
+    enable_img2img,
+    use_seed,
+    seed_val,
+    generate_num,
+    scheduler,
+    scheduler_eta,
     state){
     sel_buffer = document.querySelector("gradio-app").shadowRoot.querySelector("#input textarea").value;
     return [
@@ -21,6 +27,12 @@ function(sel_buffer_str,
         fill_mode,
         enable_safety,
         use_correction,
-        state
+        enable_img2img,
+        use_seed,
+        seed_val,
+        generate_num,
+        scheduler,
+        scheduler_eta,
+        state,
     ]
 }

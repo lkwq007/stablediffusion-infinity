@@ -98,7 +98,8 @@ class PhotometricCorrection:
         if proc.root:
             dt = time.time() - t
             print(f"Time elapsed: {dt:.4f}s")
-            return result
+            # make sure consistent with dummy process
+            return Image.fromarray(result)
 
 
     def get_parser(self,gen_type: str) -> argparse.Namespace:
