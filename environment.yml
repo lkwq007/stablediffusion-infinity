@@ -55,7 +55,7 @@ dependencies:
   - debugpy=1.6.0=py310hd8f1fbe_0
   - decorator=5.1.1=pyhd8ed1ab_0
   - defusedxml=0.7.1=pyhd8ed1ab_0
-  - diffusers=0.4.1=pyhd8ed1ab_0
+  - diffusers=0.5.1=pyhd8ed1ab_0
   - dill=0.3.5.1=pyhd8ed1ab_0
   - docstring-to-markdown=0.10=pyhd8ed1ab_0
   - entrypoints=0.4=pyhd8ed1ab_0
@@ -74,7 +74,7 @@ dependencies:
   - gmp=6.2.1=h295c915_3
   - gnutls=3.6.15=he1e5248_0
   - grpc-cpp=1.43.2=h9e046d8_3
-  - huggingface_hub=0.9.1=pyhd8ed1ab_0
+  - huggingface_hub=0.10.1=pyhd8ed1ab_0
   - icu=70.1=h27087fc_0
   - idna=3.3=pyhd3eb1b0_0
   - imagecodecs=2021.11.20=py310ha26f956_1
@@ -244,7 +244,7 @@ dependencies:
   - tornado=6.2=py310h5764c6d_0
   - tqdm=4.64.1=pyhd8ed1ab_0
   - traitlets=5.4.0=pyhd8ed1ab_0
-  - transformers=4.22.2=pyhd8ed1ab_0
+  - transformers=4.23.1=pyhd8ed1ab_0
   - typeguard=2.13.3=pyhd8ed1ab_0
   - typing-extensions=4.3.0=py310h06a4308_0
   - typing_extensions=4.3.0=py310h06a4308_0
@@ -272,6 +272,7 @@ dependencies:
     - backoff==1.10.0
     - bcrypt==4.0.0
     - cachetools==5.2.0
+    - cmake==3.24.1.1
     - commonmark==0.9.1
     - contourpy==1.0.5
     - cycler==0.11.0
@@ -279,7 +280,7 @@ dependencies:
     - fastapi==0.85.0
     - ffmpy==0.3.0
     - fonttools==4.37.3
-    - fpie==0.2.3
+    - fpie==0.2.4
     - google-auth==2.12.0
     - google-auth-oauthlib==0.4.6
     - gradio==3.4.0
