@@ -7,10 +7,13 @@ import numpy as np
 import torch
 from torch import autocast
 import diffusers
+from diffusers.configuration_utils import FrozenDict
 from diffusers import (
     StableDiffusionPipeline,
     StableDiffusionInpaintPipeline,
     StableDiffusionImg2ImgPipeline,
+    DDIMScheduler,
+    LMSDiscreteScheduler,
 )
 from PIL import Image
 from PIL import ImageOps
@@ -21,6 +24,10 @@ import skimage.measure
 from utils import *
 
 USE_NEW_DIFFUSERS = diffusers.__version__ >= "0.4.0"
+
+abspath = os.path.abspath(__file__)
+dirname = os.path.dirname(abspath)
+os.chdir(dirname)
 
 sys.path.append("./glid_3_xl_stable")
 
@@ -62,7 +69,7 @@ def load_html():
 
 def test(x):
     x = load_html()
-    return f"""<iframe id="sdinfframe" style="width: 100%; height: 700px" name="result" allow="midi; geolocation; microphone; camera; 
+    return f"""<iframe id="sdinfframe" style="width: 100%; height: 600px" name="result" allow="midi; geolocation; microphone; camera; 
     display-capture; encrypted-media;" sandbox="allow-modals allow-forms 
     allow-scripts allow-same-origin allow-popups 
     allow-top-navigation-by-user-activation allow-downloads" allowfullscreen="" 
@@ -117,6 +124,17 @@ def save_token(token):
         f.write(token)
 
 
+def prepare_scheduler(scheduler):
+    if hasattr(scheduler.config, "steps_offset") and scheduler.config.steps_offset != 1:
+        new_config = dict(scheduler.config)
+        new_config["steps_offset"] = 1
+        scheduler._internal_dict = FrozenDict(new_config)
+    return scheduler
+
+
+scheduler_dict = {"PLMS":None,"DDIM":None,"K-LMS":None}
+
+
 class StableDiffusion:
     def __init__(self, token="", model_name="CompVis/stable-diffusion-v1-4"):
         self.token = token
@@ -133,6 +151,21 @@ class StableDiffusion:
             ).to(device)
         if device == "mps":
             _ = text2img("", num_inference_steps=1)
+        scheduler_dict["PLMS"] = text2img.scheduler
+        scheduler_dict["DDIM"] = prepare_scheduler(
+            DDIMScheduler(
+                beta_start=0.00085,
+                beta_end=0.012,
+                beta_schedule="scaled_linear",
+                clip_sample=False,
+                set_alpha_to_one=False,
+            )
+        )
+        scheduler_dict["K-LMS"] = prepare_scheduler(
+            LMSDiscreteScheduler(
+                beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear"
+            )
+        )
         self.safety_checker = text2img.safety_checker
         inpaint = StableDiffusionInpaintPipeline(
             vae=text2img.vae,
@@ -178,22 +211,20 @@ class StableDiffusion:
         step=50,
         enable_img2img=False,
         use_seed=False,
-        seed_val=0,
+        seed_val=-1,
         generate_num=1,
-        scheduler=None,
+        scheduler="",
         scheduler_eta=0.0,
         **kwargs,
     ):
         text2img, inpaint, img2img = self.text2img, self.inpaint, self.img2img
-        if enable_safety:
-            text2img.safety_checker = self.safety_checker
-            inpaint.safety_checker = self.safety_checker
-            img2img.safety_checker = self.safety_checker
-        else:
-            text2img.safety_checker = lambda images, **kwargs: (images, False)
-            inpaint.safety_checker = lambda images, **kwargs: (images, False)
-            img2img.safety_checker = lambda images, **kwargs: (images, False)
-
+        selected_scheduler = scheduler_dict.get(scheduler, scheduler_dict["PLMS"])
+        for item in [text2img, inpaint, img2img]:
+            item.scheduler = selected_scheduler
+            if enable_safety:
+                item.safety_checker = self.safety_checker
+            else:
+                item.safety_checker = lambda images, **kwargs: (images, False)
         sel_buffer = np.array(image_pil)
         img = sel_buffer[:, :, 0:3]
         mask = sel_buffer[:, :, -1]
@@ -452,7 +483,7 @@ with blocks as demo:
         sd_use_seed = gr.Checkbox(label="Use seed", value=False)
         sd_seed_val = gr.Number(label="Seed", value=0, precision=0)
         sd_generate_num = gr.Number(label="Generation number", value=1, precision=0)
-        sd_scheduler = gr.Dropdown(["a", "b"], label="Scheduler", value="a")
+        sd_scheduler = gr.Dropdown(list(scheduler_dict.keys()), label="Scheduler", value="PLMS")
         sd_scheduler_eta = gr.Number(label="Eta", value=0.0)
     proceed_button = gr.Button("Proceed", elem_id="proceed", visible=DEBUG_MODE)
     # sd pipeline parameters
