@@ -131,8 +131,9 @@ async def export_func(event):
 
 async def outpaint_func(event):
     base=base_lst[0]
-    base64_str=parent.document.querySelector("gradio-app").shadowRoot.querySelector("#output textarea").value
-    arr=base.base64_to_numpy(base64_str)
+    base64_str_raw=parent.document.querySelector("gradio-app").shadowRoot.querySelector("#output textarea").value
+    base64_str_lst=base64_str_raw.split(",")
+    arr=base.base64_to_numpy(base64_str_lst[0])
     base.fill_selection(arr)
     base.draw_selection_box()
 

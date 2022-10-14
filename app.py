@@ -318,12 +318,11 @@ def run_outpaint(
     scheduler_eta,
     state,
 ):
-    base64_str = "base64"
     data = base64.b64decode(str(sel_buffer_str))
     pil = Image.open(io.BytesIO(data))
     sel_buffer = np.array(pil)
     cur_model = get_model()
-    image = cur_model.run(
+    images = cur_model.run(
         image_pil=pil,
         prompt=prompt_text,
         negative_prompt=negative_prompt_text,
@@ -342,23 +341,26 @@ def run_outpaint(
         width=max(model["sel_size"], 512),
         height=max(model["sel_size"], 512),
     )
-    if use_correction:
-        image = correction_func.run(pil.resize(image.size), image)
-        image = Image.fromarray(image)
-    resized_img = image.resize(
-        (model["sel_size"], model["sel_size"]), resample=SAMPLING_MODE,
-    )
-    out = sel_buffer.copy()
-    out[:, :, 0:3] = np.array(resized_img)
-    out[:, :, -1] = 255
-    out_pil = Image.fromarray(out)
-    out_buffer = io.BytesIO()
-    out_pil.save(out_buffer, format="PNG")
-    out_buffer.seek(0)
-    base64_bytes = base64.b64encode(out_buffer.read())
-    base64_str = base64_bytes.decode("ascii")
+    base64_str_lst=[]
+    for image in images:
+        if use_correction:
+            image = correction_func.run(pil.resize(image.size), image)
+            image = Image.fromarray(image)
+        resized_img = image.resize(
+            (model["sel_size"], model["sel_size"]), resample=SAMPLING_MODE,
+        )
+        out = sel_buffer.copy()
+        out[:, :, 0:3] = np.array(resized_img)
+        out[:, :, -1] = 255
+        out_pil = Image.fromarray(out)
+        out_buffer = io.BytesIO()
+        out_pil.save(out_buffer, format="PNG")
+        out_buffer.seek(0)
+        base64_bytes = base64.b64encode(out_buffer.read())
+        base64_str = base64_bytes.decode("ascii")
+        base64_str_lst.append(base64_str)
     return (
-        gr.update(label=str(state + 1), value=base64_str,),
+        gr.update(label=str(state + 1), value=",".join(base64_str_lst),),
         gr.update(label="Prompt"),
         state + 1,
     )
