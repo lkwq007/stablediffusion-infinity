@@ -4,6 +4,7 @@ import io
 import numpy as np
 from PIL import Image
 from pyodide import to_js, create_proxy
+import gc
 from js import (
     console,
     document,
@@ -12,6 +13,8 @@ from js import (
     Uint8ClampedArray,
     CanvasRenderingContext2D as Context2d,
     requestAnimationFrame,
+    update_overlay,
+    window
 )
 
 PAINT_SELECTION = "selection"
@@ -76,6 +79,10 @@ class CanvasProxy:
         height, width, _ = image.shape
         image_data = ImageData.new(data, width, height)
         self.ctx.putImageData(image_data, x, y)
+        del image_data
+
+    def draw_image(self,canvas, x, y):
+        self.ctx.drawImage(canvas,x,y)
 
     @property
     def stroke_style(self):
@@ -111,6 +118,7 @@ class InfCanvas:
         self.display_width = width
         self.display_height = height
         self.canvas = multi_canvas(5, width=width, height=height)
+        self.overlay = CanvasProxy(document.querySelector("#overlay"), width, height)
         # self.canvas = Canvas(width=width, height=height)
         self.view_pos = [0, 0]
         self.cursor = [
@@ -139,6 +147,14 @@ class InfCanvas:
         self.scale=1.0
         self.eraser_size=32
 
+    def reset_large_buffer(self):
+        self.canvas[2].canvas.width=self.width
+        self.canvas[2].canvas.height=self.height
+        self.canvas[2].canvas.style.width=f"{self.display_width}px"
+        self.canvas[2].canvas.style.height=f"{self.display_height}px"
+        self.canvas[2].canvas.style.display="block"
+        self.canvas[2].clear()
+
     def setup_mouse(self):
         self.image_move_cnt = 0
 
@@ -165,11 +181,13 @@ class InfCanvas:
             self.mouse_state = NOP_MODE
             self.image_move_cnt = 0
             if last_state == IMAGE_MODE:
+                self.update_view_pos(0, 0)
                 if True:
                     self.clear_background()
                     self.draw_buffer()
-                    self.canvas[2].clear()
+                    self.reset_large_buffer()
                     self.draw_selection_box()
+                gc.collect()
             if self.show_brush:
                 self.canvas[-2].clear()
                 self.show_brush = False
@@ -179,11 +197,13 @@ class InfCanvas:
             self.mouse_state = NOP_MODE
             self.image_move_cnt = 0
             if last_state == IMAGE_MODE:
+                self.update_view_pos(0, 0)
                 if True:
                     self.clear_background()
                     self.draw_buffer()
-                    self.canvas[2].clear()
+                    self.reset_large_buffer()
                     self.draw_selection_box()
+                gc.collect()
 
         async def handle_mouse_move(event):
             x, y = get_event_pos(event)
@@ -201,14 +221,26 @@ class InfCanvas:
                     self.draw_selection_box()
             elif self.mouse_state == IMAGE_MODE:
                 self.image_move_cnt += 1
-                self.update_view_pos(int(xo), int(yo))
                 if self.image_move_cnt == self.image_move_freq:
-                    if True:
-                        self.clear_background()
-                        self.draw_buffer()
-                        self.canvas[2].clear()
-                        self.draw_selection_box()
-                    self.image_move_cnt = 0
+                    self.draw_buffer()
+                    self.canvas[2].clear()
+                    self.draw_selection_box()
+                    self.update_view_pos(int(xo), int(yo))
+                    self.cached_view_pos=tuple(self.view_pos)
+                    self.canvas[2].canvas.style.display="none"
+                    large_buffer=self.data2array(self.view_pos[0]-self.width//2,self.view_pos[1]-self.height//2,self.width*2,self.height*2)
+                    self.canvas[2].canvas.width=self.width*2
+                    self.canvas[2].canvas.height=self.height*2
+                    self.canvas[2].canvas.style.width=f"{self.display_width*2}px"
+                    self.canvas[2].canvas.style.height=f"{self.display_height*2}px"
+                    self.canvas[2].put_image_data(large_buffer,0,0)
+                else:
+                    self.update_view_pos(int(xo), int(yo), False)
+                    self.canvas[1].clear()
+                    self.canvas[1].draw_image(self.canvas[2].canvas,
+                    self.cached_view_pos[0]-self.width//2-(self.view_pos[0]-self.cached_view_pos[0]),self.cached_view_pos[1]-self.height//2-(self.view_pos[1]-self.cached_view_pos[1]))
+                self.clear_background()
+                    # self.image_move_cnt = 0
             elif self.mouse_state == BRUSH_MODE:
                 if self.sel_dirty:
                     self.write_selection_to_buffer()
@@ -248,7 +280,19 @@ class InfCanvas:
         self.canvas[-1].canvas.addEventListener(
             "mouseout", create_proxy(handle_mouse_out)
         )
-
+        async def handle_mouse_wheel(event):
+            x, y = get_event_pos(event)
+            self.mouse_pos[0] = x
+            self.mouse_pos[1] = y
+            console.log(to_js(self.mouse_pos))
+            if event.deltaY>10:
+                window.postMessage(to_js(["click","zoom_out", self.mouse_pos[0], self.mouse_pos[1]]),"*")
+            elif event.deltaY<-10:
+                window.postMessage(to_js(["click","zoom_in", self.mouse_pos[0], self.mouse_pos[1]]),"*")
+            return False
+        self.canvas[-1].canvas.addEventListener(
+            "wheel", create_proxy(handle_mouse_wheel), False
+        )
     def clear_background(self):
         # fake transparent background
         h, w, step = self.height, self.width, self.grid_size
@@ -270,7 +314,7 @@ class InfCanvas:
                 self.canvas[0].fill_rect(x, y, step, step)
         self.canvas[0].stroke_rect(0, 0, w, h)
 
-    def update_scale(self, scale, mx, my):
+    def update_scale(self, scale, mx=-1, my=-1):
         self.sync_to_data()
         scaled_width=int(self.display_width*scale)
         scaled_height=int(self.display_height*scale)
@@ -278,11 +322,17 @@ class InfCanvas:
             return
         if min(scaled_height,scaled_width)<=self.selection_size:
             return
+        if mx>=0 and my>=0:
+            scaled_mx=mx/self.scale*scale
+            scaled_my=my/self.scale*scale
+            self.view_pos[0]+=int(mx-scaled_mx)
+            self.view_pos[1]+=int(my-scaled_my)
         self.scale=scale
         for item in self.canvas:
             item.canvas.width=scaled_width
             item.canvas.height=scaled_height
             item.clear()
+        update_overlay(scaled_width,scaled_height)
         self.width=scaled_width
         self.height=scaled_height
         self.data2buffer()
@@ -291,16 +341,17 @@ class InfCanvas:
         self.update_cursor(1,0)
         self.draw_selection_box()
 
-    def update_view_pos(self, xo, yo):
-        if abs(xo) + abs(yo) == 0:
-            return
+    def update_view_pos(self, xo, yo, update=True):
+        # if abs(xo) + abs(yo) == 0:
+            # return
         if self.sel_dirty:
             self.write_selection_to_buffer()
         if self.buffer_dirty:
             self.buffer2data()
         self.view_pos[0] -= xo
         self.view_pos[1] -= yo
-        self.data2buffer()
+        if update:
+            self.data2buffer()
         # self.read_selection_from_buffer()
 
     def update_cursor(self, xo, yo):
@@ -328,6 +379,20 @@ class InfCanvas:
             yd0, yd1 = pos_dst[1]
             self.buffer[yd0:yd1, xd0:xd1, :] = data[ys0:ys1, xs0:xs1, :]
 
+    def data2array(self, x, y, w, h):
+        # x, y = self.view_pos
+        # h, w = self.height, self.width
+        ret=np.zeros((h, w, 4), dtype=np.uint8)
+        # fill four parts
+        for i in range(4):
+            pos_src, pos_dst, data = self.select(x, y, i)
+            xs0, xs1 = pos_src[0]
+            ys0, ys1 = pos_src[1]
+            xd0, xd1 = pos_dst[0]
+            yd0, yd1 = pos_dst[1]
+            ret[yd0:yd1, xd0:xd1, :] = data[ys0:ys1, xs0:xs1, :]
+        return ret
+
     def buffer2data(self):
         x, y = self.view_pos
         h, w = self.height, self.width
@@ -341,8 +406,11 @@ class InfCanvas:
             data[ys0:ys1, xs0:xs1, :] = self.buffer[yd0:yd1, xd0:xd1, :]
         self.buffer_dirty = False
 
-    def select(self, x, y, idx):
-        w, h = self.width, self.height
+    def select(self, x, y, idx, width=0, height=0):
+        if width==0:
+            w, h = self.width, self.height
+        else:
+            w, h = width, height
         lst = [(0, 0), (0, h), (w, 0), (w, h)]
         if idx == 0:
             x0, y0 = x % self.patch_size, y % self.patch_size

@@ -7,6 +7,7 @@
 <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
 <link rel="stylesheet" type="text/css" href="https://rawgit.com/vitmalina/w2ui/master/dist/w2ui.min.css">
 <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+<script src="./fabric.min.js"></script>
 <style>
 #container {
   position: relative;
@@ -51,13 +52,14 @@
     </div>
 </fieldset>
 </div>
-<div id = "outer_container" style="">
+<div id = "outer_container">
 <div id = "container">
   <canvas id = "canvas0"></canvas>
   <canvas id = "canvas1"></canvas>
   <canvas id = "canvas2"></canvas>
   <canvas id = "canvas3"></canvas>
   <canvas id = "canvas4"></canvas>
+  <canvas id = "overlay" style="pointer-events: none"></canvas>
 </div>
 <input type="file" name="file" id="upload_file" accept="image/*" hidden>
 <input type="file" name="state" id="upload_state" accept=".json" hidden>
@@ -148,6 +150,8 @@ async def export_func(event):
     link.href = "data:image/png;base64,"+base64_str
     link.click()
 
+img_candidate_lst=[None,0]
+
 async def outpaint_func(event):
     base=base_lst[0]
     #app=parent.document.querySelector("gradio-app")
@@ -172,6 +176,7 @@ async def outpaint_func(event):
 
 async def undo_func(event):
     base=base_lst[0]
+    img_candidate_lst[0]=None
     if base.sel_dirty:
         base.canvas[2].clear()
         base.sel_buffer = base.sel_buffer_bak.copy()
@@ -179,6 +184,7 @@ async def undo_func(event):
 
 async def commit_func(event):
     base=base_lst[0]
+    img_candidate_lst[0]=None
     if base.sel_dirty:
         base.write_selection_to_buffer()
 
@@ -255,18 +261,25 @@ async def zoom_in_func(event):
     scale=base.scale
     if scale>=0.2:
         scale-=0.1
-        base.update_scale(scale,0,0)
+        if len(event.data)>2:
+            base.update_scale(scale,int(event.data[2]),int(event.data[3]))
+        else:
+            base.update_scale(scale)
         scale=base.scale
-        update_scale(int(1/scale*100))
+        update_scale(round(100/scale))
 
 async def zoom_out_func(event):
     base=base_lst[0]
     scale=base.scale
     if scale<10:
         scale+=0.1
-        base.update_scale(scale,0,0)
+        console.log(len(event.data))
+        if len(event.data)>2:
+            base.update_scale(scale,int(event.data[2]),int(event.data[3]))
+        else:
+            base.update_scale(scale)
         scale=base.scale
-        update_scale(int(1/scale*100))
+        update_scale(round(100/scale))
 
 async def sync_func(event):
     base=base_lst[0]
@@ -367,6 +380,7 @@ document.querySelector("#upload_state").addEventListener("change", (event)=>{
     getText(file);
 })
 
+var button_lst=["clear", "load", "save", "export", "upload", "selection", "canvas", "eraser", "outpaint", "accept", "cancel", "retry", "prev", "current", "next", "eraser_size_btn", "eraser_size", "resize_selection", "scale", "zoom_in", "zoom_out", "help"];
 
 var toolbar=new w2toolbar({
     box: "#toolbar",
@@ -406,7 +420,7 @@ var toolbar=new w2toolbar({
         { type: "break" },
         { type: "spacer" },
         { type: "break" },
-        { type: "button", id: "eraser_size_btn", tooltip: "Eraser Size", text:"Size", icon: "fa-solid fa-eraser", hidden:true, count: 32},
+        { type: "button", id: "eraser_size_btn", tooltip: "Eraser Size", text:"Size", icon: "fa-solid fa-eraser", hidden: true, count: 32},
         { type: "html", id: "eraser_size", hidden: true,
             async onRefresh(event) {
                 await event.complete
@@ -462,13 +476,11 @@ var toolbar=new w2toolbar({
             case "canvas":
                 if(event.target=="eraser")
                 {
-                    this.show("eraser_size");
-                    this.show("eraser_size_btn");
+                    this.show("eraser_size","eraser_size_btn");
                 }
                 else
                 {
-                    this.hide("eraser_size");
-                    this.show("eraser_size_btn");
+                    this.hide("eraser_size","eraser_size_btn");
                 }
                 window.postMessage(["mode", event.target],"*")
                 break;
@@ -498,6 +510,10 @@ window.update_eraser=function(val,max_val){
   w2ui.toolbar.refresh();
 }
 window.update_scale=function(val){
+  w2ui.toolbar.scale_value=`${val}%`;
+  w2ui.toolbar.refresh();
+}
+window.update_overlay=function(val){
   w2ui.toolbar.scale_value=`${val}%`;
   w2ui.toolbar.refresh();
 }
