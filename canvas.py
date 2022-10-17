@@ -81,8 +81,10 @@ class CanvasProxy:
         self.ctx.putImageData(image_data, x, y)
         del image_data
 
-    def draw_image(self,canvas, x, y):
-        self.ctx.drawImage(canvas,x,y)
+    # def draw_image(self,canvas, x, y, w, h):
+    #     self.ctx.drawImage(canvas,x,y,w,h)
+    def draw_image(self,canvas, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight):
+        self.ctx.drawImage(canvas, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
 
     @property
     def stroke_style(self):
@@ -153,7 +155,6 @@ class InfCanvas:
         self.canvas[2].canvas.style.width=f"{self.display_width}px"
         self.canvas[2].canvas.style.height=f"{self.display_height}px"
         self.canvas[2].canvas.style.display="block"
-        self.canvas[2].clear()
 
     def setup_mouse(self):
         self.image_move_cnt = 0
@@ -185,7 +186,8 @@ class InfCanvas:
                 if True:
                     self.clear_background()
                     self.draw_buffer()
-                    self.reset_large_buffer()
+                    self.canvas[2].clear()
+                    # self.reset_large_buffer()
                     self.draw_selection_box()
                 gc.collect()
             if self.show_brush:
@@ -201,7 +203,8 @@ class InfCanvas:
                 if True:
                     self.clear_background()
                     self.draw_buffer()
-                    self.reset_large_buffer()
+                    self.canvas[2].clear()
+                    # self.reset_large_buffer()
                     self.draw_selection_box()
                 gc.collect()
 
@@ -229,16 +232,19 @@ class InfCanvas:
                     self.cached_view_pos=tuple(self.view_pos)
                     self.canvas[2].canvas.style.display="none"
                     large_buffer=self.data2array(self.view_pos[0]-self.width//2,self.view_pos[1]-self.height//2,self.width*2,self.height*2)
-                    self.canvas[2].canvas.width=self.width*2
-                    self.canvas[2].canvas.height=self.height*2
-                    self.canvas[2].canvas.style.width=f"{self.display_width*2}px"
-                    self.canvas[2].canvas.style.height=f"{self.display_height*2}px"
+                    self.canvas[2].canvas.width=2*self.width
+                    self.canvas[2].canvas.height=2*self.height
+                    self.canvas[2].canvas.style.width=""
+                    self.canvas[2].canvas.style.height=""
                     self.canvas[2].put_image_data(large_buffer,0,0)
                 else:
                     self.update_view_pos(int(xo), int(yo), False)
                     self.canvas[1].clear()
                     self.canvas[1].draw_image(self.canvas[2].canvas,
-                    self.cached_view_pos[0]-self.width//2-(self.view_pos[0]-self.cached_view_pos[0]),self.cached_view_pos[1]-self.height//2-(self.view_pos[1]-self.cached_view_pos[1]))
+                    self.width//2+(self.view_pos[0]-self.cached_view_pos[0]),self.height//2+(self.view_pos[1]-self.cached_view_pos[1]),
+                    self.width,self.height,
+                    0,0,self.width,self.height
+                    )
                 self.clear_background()
                     # self.image_move_cnt = 0
             elif self.mouse_state == BRUSH_MODE:
@@ -385,7 +391,7 @@ class InfCanvas:
         ret=np.zeros((h, w, 4), dtype=np.uint8)
         # fill four parts
         for i in range(4):
-            pos_src, pos_dst, data = self.select(x, y, i)
+            pos_src, pos_dst, data = self.select(x, y, i, w, h)
             xs0, xs1 = pos_src[0]
             ys0, ys1 = pos_src[1]
             xd0, xd1 = pos_dst[0]
