@@ -60,7 +60,7 @@
   <canvas id = "canvas2"></canvas>
   <canvas id = "canvas3"></canvas>
   <canvas id = "canvas4"></canvas>
-  <div id="overlay" style="pointer-events: none">
+  <div id="overlay_container" style="pointer-events: none">
     <canvas id = "overlay_canvas" width="1" height="1"></canvas>
   </div>
 </div>
@@ -111,7 +111,7 @@ async def draw_canvas() -> None:
     width=1024
     height=600
     canvas=InfCanvas(1024,600)
-    update_eraser(canvas.eraser_size,canvas.selection_size)
+    update_eraser(canvas.eraser_size,min(canvas.selection_size_h,canvas.selection_size_w))
     document.querySelector("#container").style.height= f"{height}px"
     document.querySelector("#container").style.width = f"{width}px"
     canvas.setup_mouse()
@@ -165,8 +165,8 @@ async def outpaint_func(event):
     #base64_str_lst=base64_str_raw.split(",")
     #arr=base.base64_to_numpy(base64_str_lst[0])
     rgb_color=(100,120,140)
-    WIDTH_LIMIT=base.selection_size
-    HEIGHT_LIMIT=base.selection_size
+    WIDTH_LIMIT=base.selection_size_w
+    HEIGHT_LIMIT=base.selection_size_h
     x = np.ones((HEIGHT_LIMIT, WIDTH_LIMIT, 4)) 
     x[:, :, 0:3] = rgb_color
     y = np.ones((HEIGHT_LIMIT, WIDTH_LIMIT, 4))
@@ -291,7 +291,7 @@ async def sync_func(event):
 
 async def eraser_size_func(event):
     base=base_lst[0]
-    eraser_size=min(int(event.data[1]),base.selection_size)
+    eraser_size=min(int(event.data[1]),min(base.selection_size_h,base.selection_size_w))
     eraser_size=max(8,eraser_size)
     base.eraser_size=eraser_size
 
@@ -302,13 +302,15 @@ async def resize_selection_func(event):
         console.log(event.data)
         base.cursor[0]=int(event.data[1])
         base.cursor[1]=int(event.data[2])
+        base.selection_size_w=int(event.data[3])
+        base.selection_size_h=int(event.data[4])
         base.refine_selection()
         base.draw_selection_box()
     elif len(event.data)>2:
         base.draw_selection_box()
     else:
         base.canvas[-1].clear()
-        adjust_selection(cursor[0],cursor[1],base.selection_size,base.selection_size)
+        adjust_selection(cursor[0],cursor[1],base.selection_size_w,base.selection_size_h)
 
 async def message_func(event):
     if event.data[0]=="click":
@@ -362,7 +364,7 @@ _ = await asyncio.gather(
 
 <script type="module">
 // import { w2ui,w2toolbar,w2field, query, w2alert} from "https://rawgit.com/vitmalina/w2ui/master/dist/w2ui.es6.min.js"
-import { w2ui,w2toolbar,w2field,query,w2alert, w2utils} from "./w2ui.es6.min.js"
+import { w2ui,w2toolbar,w2field,query,w2alert, w2utils,w2confirm} from "./w2ui.es6.min.js"
 
 // https://stackoverflow.com/questions/36280818/how-to-convert-file-to-base64-in-javascript
 function getBase64(file) {
@@ -491,7 +493,7 @@ var toolbar=new w2toolbar({
         switch(event.target){
             case "upload":
                 this.upload_mode=true
-                document.querySelector("#overlay").style.pointerEvents="auto";
+                document.querySelector("#overlay_container").style.pointerEvents="auto";
                 this.click("canvas");
                 this.click("selection");
                 this.show("confirm","cancel_overlay","add_image","delete_image");
@@ -505,7 +507,7 @@ var toolbar=new w2toolbar({
                 this.enable("confirm","cancel_overlay");
                 this.show("confirm","cancel_overlay");
                 window.postMessage(["resize_selection",""],"*");
-                document.querySelector("#overlay").style.pointerEvents="auto";
+                document.querySelector("#overlay_container").style.pointerEvents="auto";
                 break;
             case "confirm":
                 if(this.upload_mode)
@@ -555,14 +557,22 @@ var toolbar=new w2toolbar({
                 this.disable(...outpaint_button_lst);
                 this.show(...outpaint_result_lst);
                 this.enable(...outpaint_result_lst);
+                if(this.outpaint_tip)
+                {
+                    this.outpaint_tip=false;
+                    w2utils.notify("The canvas stays locked until you accept/cancel current outpainting",{timeout:10000,where:query("#container")})
+                }
+                document.querySelector("#container").style.pointerEvents="none";
             case "retry":
                 window.postMessage(["outpaint",""],"*")
                 break;
             case "accept":
             case "cancel":
-                window.postMessage(["click", event.target],"*");
                 this.hide(...outpaint_result_lst);
                 this.disable(...outpaint_result_lst);
+                this.enable(...outpaint_button_lst);
+                document.querySelector("#container").style.pointerEvents="auto";
+                window.postMessage(["click", event.target],"*");
                 break;
             case "eraser":
             case "selection":
@@ -583,13 +593,13 @@ var toolbar=new w2toolbar({
                     if(event.target=="canvas")
                     {
                         window.postMessage(["mode", event.target],"*")
-                        document.querySelector("#overlay").style.pointerEvents="none";
-                        document.querySelector("#overlay").style.opacity = 0.5;
+                        document.querySelector("#overlay_container").style.pointerEvents="none";
+                        document.querySelector("#overlay_container").style.opacity = 0.5;
                     }
                     else
                     {
-                        document.querySelector("#overlay").style.pointerEvents="auto";
-                        document.querySelector("#overlay").style.opacity = 1.0;
+                        document.querySelector("#overlay_container").style.pointerEvents="auto";
+                        document.querySelector("#overlay_container").style.opacity = 1.0;
                     }
                 }
                 else
@@ -600,6 +610,11 @@ var toolbar=new w2toolbar({
             case "help":
                 w2alert("stablediffusion-infinity: https://github.com/lkwq007/stablediffusion-infinity");
                 break;
+            case "clear":
+                w2confirm("Reset canvas?").yes(() => {
+                    window.postMessage(["click", event.target],"*");
+                }).no(() => {})
+                break;
             default:
                 // clear, save, export, outpaint, retry
                 // break, save, export, accept, retry, outpaint
@@ -609,6 +624,7 @@ var toolbar=new w2toolbar({
     }
 })
 window.w2ui=w2ui;
+w2ui.toolbar.outpaint_tip=true;
 window.update_count=function(cur,total){
   w2ui.toolbar.sel_value=`${cur}/${total}`;
   w2ui.toolbar.refresh();
@@ -654,18 +670,25 @@ function onObjectMoved(e)
 }
 window.setup_overlay=function(width,height)
 {
-    canvas=new fabric.Canvas("overlay_canvas");
-    canvas.setDimensions({width:width,height:height});
-    canvas.freeDrawingBrush = new fabric.EraserBrush(canvas);
-    canvas.on("object:scaling", onObjectScaled);
-    canvas.on("object:moving", onObjectMoved);
-    window.overlay=canvas;
-    document.querySelector("#overlay").style.pointerEvents="none";
+    if(window.overlay)
+    {
+        window.overlay.setDimensions({width:width,height:height});
+    }
+    else
+    {
+        canvas=new fabric.Canvas("overlay_canvas");
+        canvas.setDimensions({width:width,height:height});
+        canvas.freeDrawingBrush = new fabric.EraserBrush(canvas);
+        canvas.on("object:scaling", onObjectScaled);
+        canvas.on("object:moving", onObjectMoved);
+        window.overlay=canvas;
+    }
+    document.querySelector("#overlay_container").style.pointerEvents="none";
 }
 window.update_overlay=function(width,height)
 {
     window.overlay.setDimensions({width:width,height:height},{backstoreOnly:true});
-    // document.querySelector("#overlay").style.pointerEvents="none";
+    // document.querySelector("#overlay_container").style.pointerEvents="none";
 }
 window.adjust_selection=function(x,y,width,height)
 {
@@ -674,18 +697,23 @@ window.adjust_selection=function(x,y,width,height)
         top: y,
         fill: "rgba(0,0,0,0)",
         strokeWidth: 3, 
-        stroke: "rgba(255,200,200,1)",
+        stroke: "rgba(0,0,0,0.7)",
+        cornerColor: "red",
+        cornerStrokeColor: "red",
+        borderColor: "rgba(255, 0, 0, 1.0)",
         width: width,
         height: height,
         lockRotation: true,
     });
     rect.setControlsVisibility({ mtr: false });
     window.overlay.add(rect);
+    window.overlay.setActiveObject(window.overlay.item(0));
 }
 function add_image(url)
 {
     fabric.Image.fromURL(url,function(img){
         window.overlay.add(img);
+        window.overlay.setActiveObject(img);
     },{left:100,top:100});
 }
 function export_image()
@@ -698,8 +726,8 @@ function export_image()
 function end_overlay()
 {
     window.overlay.clear();
-    document.querySelector("#overlay").style.opacity = 1.0;
-    document.querySelector("#overlay").style.pointerEvents="none";
+    document.querySelector("#overlay_container").style.opacity = 1.0;
+    document.querySelector("#overlay_container").style.pointerEvents="none";
 }
 </script>
 </body>

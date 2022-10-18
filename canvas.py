@@ -122,8 +122,7 @@ class InfCanvas:
         self.display_height = height
         self.canvas = multi_canvas(5, width=width, height=height)
         setup_overlay(width,height)
-        # self.overlay = CanvasProxy(document.querySelector("#overlay"), width, height)
-        # self.canvas = Canvas(width=width, height=height)
+        # place at center
         self.view_pos = [patch_size//2-width//2, patch_size//2-height//2]
         self.cursor = [
             width // 2 - selection_size // 2,
@@ -131,7 +130,8 @@ class InfCanvas:
         ]
         self.data = {}
         self.grid_size = grid_size
-        self.selection_size = selection_size
+        self.selection_size_w = selection_size
+        self.selection_size_h = selection_size
         self.patch_size = patch_size
         # note that for image data, the height comes before width
         self.buffer = np.zeros((height, width, 4), dtype=np.uint8)
@@ -323,7 +323,13 @@ class InfCanvas:
         self.canvas[0].stroke_rect(0, 0, w, h)
 
     def refine_selection(self):
-        pass
+        h,w=self.selection_size_h,self.selection_size_w
+        h=h//8*8
+        w=w//8*8
+        h=min(h,self.height)
+        w=min(w,self.width)
+        self.update_cursor(1,0)
+        
 
     def update_scale(self, scale, mx=-1, my=-1):
         self.sync_to_data()
@@ -331,7 +337,7 @@ class InfCanvas:
         scaled_height=int(self.display_height*scale)
         if max(scaled_height,scaled_width)>=self.patch_size*2-128:
             return
-        if min(scaled_height,scaled_width)<=self.selection_size:
+        if scaled_height<=self.selection_size_h or scaled_width<=self.selection_size_w:
             return
         if mx>=0 and my>=0:
             scaled_mx=mx/self.scale*scale
@@ -372,8 +378,8 @@ class InfCanvas:
             self.write_selection_to_buffer()
         self.cursor[0] += xo
         self.cursor[1] += yo
-        self.cursor[0] = max(min(self.width - self.selection_size, self.cursor[0]), 0)
-        self.cursor[1] = max(min(self.height - self.selection_size, self.cursor[1]), 0)
+        self.cursor[0] = max(min(self.width - self.selection_size_w, self.cursor[0]), 0)
+        self.cursor[1] = max(min(self.height - self.selection_size_h, self.cursor[1]), 0)
         # self.read_selection_from_buffer()
 
     def data2buffer(self):
@@ -467,25 +473,26 @@ class InfCanvas:
 
     def draw_selection_box(self):
         x0, y0 = self.cursor
-        size = self.selection_size
+        w, h = self.selection_size_w, self.selection_size_h
         if self.sel_dirty:
             self.canvas[2].clear()
             self.canvas[2].put_image_data(self.sel_buffer, x0, y0)
         self.canvas[-1].clear()
         self.canvas[-1].stroke_style = "#0a0a0a"
-        self.canvas[-1].stroke_rect(x0, y0, size, size)
+        self.canvas[-1].stroke_rect(x0, y0, w, h)
         self.canvas[-1].stroke_style = "#ffffff"
-        self.canvas[-1].stroke_rect(x0 - 1, y0 - 1, size + 2, size + 2)
+        offset=round(self.scale) if self.scale>1.0 else 1
+        self.canvas[-1].stroke_rect(x0 - offset, y0 - offset, w + offset*2, h + offset*2)
         self.canvas[-1].stroke_style = "#000000"
-        self.canvas[-1].stroke_rect(x0 - 2, y0 - 2, size + 4, size + 4)
+        self.canvas[-1].stroke_rect(x0 - offset*2, y0 - offset*2, w + offset*4, h + offset*4)
 
     def write_selection_to_buffer(self):
         x0, y0 = self.cursor
-        x1, y1 = x0 + self.selection_size, y0 + self.selection_size
+        x1, y1 = x0 + self.selection_size_w, y0 + self.selection_size_h
         self.buffer[y0:y1, x0:x1] = self.sel_buffer
         self.sel_dirty = False
         self.sel_buffer = np.zeros(
-            (self.selection_size, self.selection_size, 4), dtype=np.uint8
+            (self.selection_size_h, self.selection_size_w, 4), dtype=np.uint8
         )
         self.buffer_dirty = True
         self.buffer_updated = True
@@ -493,7 +500,7 @@ class InfCanvas:
 
     def read_selection_from_buffer(self):
         x0, y0 = self.cursor
-        x1, y1 = x0 + self.selection_size, y0 + self.selection_size
+        x1, y1 = x0 + self.selection_size_w, y0 + self.selection_size_h
         self.sel_buffer = self.buffer[y0:y1, x0:x1]
         self.sel_dirty = False
 
@@ -506,7 +513,7 @@ class InfCanvas:
         except:
             ret = np.tile(
                 np.array([255, 0, 0, 255], dtype=np.uint8),
-                (self.selection_size, self.selection_size, 1),
+                (self.selection_size_h, self.selection_size_w, 1),
             )
         return ret
 
@@ -533,17 +540,26 @@ class InfCanvas:
             self.write_selection_to_buffer()
         self.draw_buffer()
 
-    def resize(self,*args):
-        pass
+    def resize(self,width,height,scale=None,**kwargs):
+        self.display_width=width
+        self.display_height=height
+        for canvas in self.canvas:
+            prepare_canvas(width=width,height=height,canvas=canvas.canvas)
+        setup_overlay(width,height)
+        if scale is None:
+            scale=1
+        self.update_scale(scale)
+
 
     def save(self):
         self.sync_to_data()
         state={}
-        state["width"]=self.width
-        state["height"]=self.height
-        state["selection"]=self.selection_size
-        state["view_pos"]=self.view_pos
-        state["cursor"]=self.cursor
+        state["width"]=self.display_width
+        state["height"]=self.display_height
+        state["selection_width"]=self.selection_size_w
+        state["selection_height"]=self.selection_size_h
+        state["view_pos"]=self.view_pos[:]
+        state["cursor"]=self.cursor[:]
         state["scale"]=self.scale
         keys=list(self.data.keys())
         data={}
@@ -556,13 +572,14 @@ class InfCanvas:
     def load(self, state_json):
         self.reset()
         state=json.loads(state_json)
-        self.width=state["width"]
-        self.height=state["height"]
-        self.selection_size=state["selection"]
-        self.view_pos=state["view_pos"]
-        self.cursor=state["cursor"]
+        self.display_width=state["width"]
+        self.display_height=state["height"]
+        self.selection_size_w=state["selection_width"]
+        self.selection_size_h=state["selection_height"]
+        self.view_pos=state["view_pos"][:]
+        self.cursor=state["cursor"][:]
         self.scale=state["scale"]
-        # self.resize()
+        self.resize(state["width"],state["height"],scale=state["scale"])
         for k,v in state["data"].items():
             key=tuple(map(int,k.split(",")))
             self.data[key]=self.base64_to_numpy(v)
@@ -591,7 +608,7 @@ class InfCanvas:
         xmin, xmax, ymin, ymax = 0, 0, 0, 0
         if len(self.data.keys()) == 0:
             return np.zeros(
-                (self.selection_size, self.selection_size, 4), dtype=np.uint8
+                (self.selection_size_h, self.selection_size_w, 4), dtype=np.uint8
             )
         for xi, yi in self.data.keys():
             buf = self.data[(xi, yi)]
@@ -619,5 +636,5 @@ class InfCanvas:
             return image
         else:
             return np.zeros(
-                (self.selection_size, self.selection_size, 4), dtype=np.uint8
+                (self.selection_size_h, self.selection_size_w, 4), dtype=np.uint8
             )
