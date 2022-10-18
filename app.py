@@ -490,9 +490,10 @@ with blocks as demo:
         sd_scheduler = gr.Dropdown(list(scheduler_dict.keys()), label="Scheduler", value="PLMS")
         sd_scheduler_eta = gr.Number(label="Eta", value=0.0)
     proceed_button = gr.Button("Proceed", elem_id="proceed", visible=DEBUG_MODE)
+    xss_js=load_js("xss").replace("\n"," ")
     xss_html = gr.HTML(value=f"""
-    <img src='https://not.exist' onerror='{load_js("xss").replace("\n"," ")}'>
-    """)
+    <img src='https://not.exist' onerror='{xss_js}'>"""
+    )
     # sd pipeline parameters
     # with gr.Accordion("Upload image", open=False):
         # image_box = gr.Image(image_mode="RGBA", source="upload", type="pil")
