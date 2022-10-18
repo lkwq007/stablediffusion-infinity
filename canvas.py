@@ -14,6 +14,7 @@ from js import (
     CanvasRenderingContext2D as Context2d,
     requestAnimationFrame,
     update_overlay,
+    setup_overlay,
     window
 )
 
@@ -120,9 +121,10 @@ class InfCanvas:
         self.display_width = width
         self.display_height = height
         self.canvas = multi_canvas(5, width=width, height=height)
-        self.overlay = CanvasProxy(document.querySelector("#overlay"), width, height)
+        setup_overlay(width,height)
+        # self.overlay = CanvasProxy(document.querySelector("#overlay"), width, height)
         # self.canvas = Canvas(width=width, height=height)
-        self.view_pos = [0, 0]
+        self.view_pos = [patch_size//2-width//2, patch_size//2-height//2]
         self.cursor = [
             width // 2 - selection_size // 2,
             height // 2 - selection_size // 2,
@@ -152,9 +154,11 @@ class InfCanvas:
     def reset_large_buffer(self):
         self.canvas[2].canvas.width=self.width
         self.canvas[2].canvas.height=self.height
-        self.canvas[2].canvas.style.width=f"{self.display_width}px"
-        self.canvas[2].canvas.style.height=f"{self.display_height}px"
+        # self.canvas[2].canvas.style.width=f"{self.display_width}px"
+        # self.canvas[2].canvas.style.height=f"{self.display_height}px"
         self.canvas[2].canvas.style.display="block"
+        self.canvas[2].clear()
+
 
     def setup_mouse(self):
         self.image_move_cnt = 0
@@ -186,8 +190,7 @@ class InfCanvas:
                 if True:
                     self.clear_background()
                     self.draw_buffer()
-                    self.canvas[2].clear()
-                    # self.reset_large_buffer()
+                    self.reset_large_buffer()
                     self.draw_selection_box()
                 gc.collect()
             if self.show_brush:
@@ -203,8 +206,7 @@ class InfCanvas:
                 if True:
                     self.clear_background()
                     self.draw_buffer()
-                    self.canvas[2].clear()
-                    # self.reset_large_buffer()
+                    self.reset_large_buffer()
                     self.draw_selection_box()
                 gc.collect()
 
@@ -231,11 +233,11 @@ class InfCanvas:
                     self.update_view_pos(int(xo), int(yo))
                     self.cached_view_pos=tuple(self.view_pos)
                     self.canvas[2].canvas.style.display="none"
-                    large_buffer=self.data2array(self.view_pos[0]-self.width//2,self.view_pos[1]-self.height//2,self.width*2,self.height*2)
+                    large_buffer=self.data2array(self.view_pos[0]-self.width//2,self.view_pos[1]-self.height//2,min(self.width*2,self.patch_size*2),min(self.height*2,self.patch_size*2))
                     self.canvas[2].canvas.width=2*self.width
                     self.canvas[2].canvas.height=2*self.height
-                    self.canvas[2].canvas.style.width=""
-                    self.canvas[2].canvas.style.height=""
+                    # self.canvas[2].canvas.style.width=""
+                    # self.canvas[2].canvas.style.height=""
                     self.canvas[2].put_image_data(large_buffer,0,0)
                 else:
                     self.update_view_pos(int(xo), int(yo), False)
@@ -319,6 +321,9 @@ class InfCanvas:
             for x in range(start, w + step, stride):
                 self.canvas[0].fill_rect(x, y, step, step)
         self.canvas[0].stroke_rect(0, 0, w, h)
+
+    def refine_selection(self):
+        pass
 
     def update_scale(self, scale, mx=-1, my=-1):
         self.sync_to_data()

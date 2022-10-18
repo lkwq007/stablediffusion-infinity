@@ -7,7 +7,7 @@
 <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
 <link rel="stylesheet" type="text/css" href="https://rawgit.com/vitmalina/w2ui/master/dist/w2ui.min.css">
 <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
-<script src="./fabric.min.js"></script>
+<script src="./js/fabric.js"></script>
 <style>
 #container {
   position: relative;
@@ -36,6 +36,7 @@
 <button type="button" class="control" id="draw">Draw</button>
 <input type="text" id="mode" value="selection" class="control">
 <input type="text" id="setup" value="0" class="control">
+<input type="text" id="upload_content" value="0" class="control">
 <textarea rows="1" id="selbuffer" name="selbuffer" class="control"></textarea>
 <fieldset class="control">
     <div>
@@ -59,7 +60,9 @@
   <canvas id = "canvas2"></canvas>
   <canvas id = "canvas3"></canvas>
   <canvas id = "canvas4"></canvas>
-  <canvas id = "overlay" style="pointer-events: none"></canvas>
+  <div id="overlay" style="pointer-events: none">
+    <canvas id = "overlay_canvas" width="1" height="1"></canvas>
+  </div>
 </div>
 <input type="file" name="file" id="upload_file" accept="image/*" hidden>
 <input type="file" name="state" id="upload_state" accept=".json" hidden>
@@ -94,7 +97,8 @@ from js import (
     encodeURIComponent,
     w2ui,
     update_eraser,
-    update_scale
+    update_scale,
+    adjust_selection
 )
 
 
@@ -201,20 +205,20 @@ async def transfer_func(event):
 
 async def upload_func(event):
     base=base_lst[0]
-    base64_str=event.data[1]
+    # base64_str=event.data[1]
+    base64_str=document.querySelector("#upload_content").value
+    base64_str=base64_str.split(",")[-1]
     # base64_str=parent.document.querySelector("gradio-app").shadowRoot.querySelector("#upload textarea").value
     arr=base.base64_to_numpy(base64_str)
-    h,w,_=arr.shape
-    yo=(base.height-h)//2
-    xo=(base.width-w)//2
-    if base.sel_dirty:
-        base.canvas[2].clear()
-        base.sel_buffer = base.sel_buffer_bak.copy()
-        base.sel_dirty = False
+    h,w,c=base.buffer.shape
+    base.sync_to_buffer()
     base.buffer_dirty=True
-    base.buffer*=0
-    base.buffer[yo:yo+h,xo:xo+w,0:3]=arr[:,:,0:3]
-    base.buffer[yo:yo+h,xo:xo+w,-1]=arr[:,:,-1]
+    mask=arr[:,:,3:4].repeat(4,axis=2)
+    base.buffer[mask>0]=0
+    # in case mismatch
+    base.buffer[0:h,0:w,:]+=arr
+    #base.buffer[yo:yo+h,xo:xo+w,0:3]=arr[:,:,0:3]
+    #base.buffer[yo:yo+h,xo:xo+w,-1]=arr[:,:,-1]
     base.draw_buffer()
 
   
@@ -291,6 +295,20 @@ async def eraser_size_func(event):
     eraser_size=max(8,eraser_size)
     base.eraser_size=eraser_size
 
+async def resize_selection_func(event):
+    base=base_lst[0]
+    cursor=base.cursor
+    if len(event.data)>3:
+        console.log(event.data)
+        base.cursor[0]=int(event.data[1])
+        base.cursor[1]=int(event.data[2])
+        base.refine_selection()
+        base.draw_selection_box()
+    elif len(event.data)>2:
+        base.draw_selection_box()
+    else:
+        base.canvas[-1].clear()
+        adjust_selection(cursor[0],cursor[1],base.selection_size,base.selection_size)
 
 async def message_func(event):
     if event.data[0]=="click":
@@ -312,6 +330,8 @@ async def message_func(event):
             await zoom_in_func(event)
         elif event.data[1]=="zoom_out":
             await zoom_out_func(event)
+    elif event.data[0]=="sync":
+        await sync_func(event)
     elif event.data[0]=="load":
         await load_func(event)
     elif event.data[0]=="upload":
@@ -328,6 +348,8 @@ async def message_func(event):
         await draw_canvas_func(event)
     elif event.data[0]=="eraser_size":
         await eraser_size_func(event)
+    elif event.data[0]=="resize_selection":
+        await resize_selection_func(event)
     
 window.addEventListener("message",create_proxy(message_func))
 
@@ -340,15 +362,14 @@ _ = await asyncio.gather(
 
 <script type="module">
 // import { w2ui,w2toolbar,w2field, query, w2alert} from "https://rawgit.com/vitmalina/w2ui/master/dist/w2ui.es6.min.js"
-import { w2ui,w2toolbar,w2field,query,w2alert} from "./w2ui.es6.min.js"
+import { w2ui,w2toolbar,w2field,query,w2alert, w2utils} from "./w2ui.es6.min.js"
 
 // https://stackoverflow.com/questions/36280818/how-to-convert-file-to-base64-in-javascript
 function getBase64(file) {
    var reader = new FileReader();
    reader.readAsDataURL(file);
    reader.onload = function () {
-     let tmp=reader.result.split(",")
-     window.postMessage(["upload",tmp[1]],"*")
+    add_image(reader.result);
     //  console.log(reader.result);
    };
    reader.onerror = function (error) {
@@ -381,7 +402,10 @@ document.querySelector("#upload_state").addEventListener("change", (event)=>{
 })
 
 var button_lst=["clear", "load", "save", "export", "upload", "selection", "canvas", "eraser", "outpaint", "accept", "cancel", "retry", "prev", "current", "next", "eraser_size_btn", "eraser_size", "resize_selection", "scale", "zoom_in", "zoom_out", "help"];
-
+var upload_button_lst=['clear', 'load', 'save', "upload", 'export', 'outpaint', 'resize_selection', 'help'];
+var resize_button_lst=['clear', 'load', 'save', "upload", 'export', "selection", "canvas", "eraser", 'outpaint', 'resize_selection',"zoom_in", "zoom_out", 'help'];
+var outpaint_button_lst=['clear', 'load', 'save', "canvas", "eraser", "upload", 'export', 'resize_selection', "zoom_in", "zoom_out",'help'];
+var outpaint_result_lst=["accept", "cancel", "retry", "prev", "current", "next"];
 var toolbar=new w2toolbar({
     box: "#toolbar",
     name: "toolbar",
@@ -401,11 +425,11 @@ var toolbar=new w2toolbar({
         { type: "break" },
         { type: "button", id: "outpaint", text: "Outpaint", icon: "fa-solid fa-brush" },
         { type: "break" },
-        { type: "button", id: "accept", text: "Accept", icon: "fa-solid fa-check" },
-        { type: "button", id: "cancel", text: "Cancel", icon: "fa-solid fa-ban" },
-        { type: "button", id: "retry", text: "Retry", icon: "fa-solid fa-rotate" },
-        { type: "button", id: "prev", tooltip: "Prev Result", icon: "fa-solid fa-caret-left" },
-        { type: "html", id: "current",
+        { type: "button", id: "accept", text: "Accept", icon: "fa-solid fa-check", hidden: true, disable:true,},
+        { type: "button", id: "cancel", text: "Cancel", icon: "fa-solid fa-ban", hidden: true, disable:true,},
+        { type: "button", id: "retry", text: "Retry", icon: "fa-solid fa-rotate", hidden: true, disable:true,},
+        { type: "button", id: "prev", tooltip: "Prev Result", icon: "fa-solid fa-caret-left", hidden: true, disable:true,},
+        { type: "html", id: "current", hidden: true, disable:true,
             async onRefresh(event) {
                 await event.complete
                 let fragment = query.html(`
@@ -416,7 +440,11 @@ var toolbar=new w2toolbar({
                 query(this.box).find("#tb_toolbar_item_current").append(fragment)
             }
         },
-        { type: "button", id: "next", tooltip: "Next Result", icon: "fa-solid fa-caret-right" },
+        { type: "button", id: "next", tooltip: "Next Result", icon: "fa-solid fa-caret-right", hidden: true,disable:true,},
+        { type: "button", id: "add_image", text: "Add Image", icon: "fa-solid fa-file-circle-plus", hidden: true,disable:true,},
+        { type: "button", id: "delete_image", text: "Delete Image", icon: "fa-solid fa-trash-can", hidden: true,disable:true,},
+        { type: "button", id: "confirm", text: "Confirm", icon: "fa-solid fa-check", hidden: true,disable:true,},
+        { type: "button", id: "cancel_overlay", text: "Cancel", icon: "fa-solid fa-ban", hidden: true,disable:true,},
         { type: "break" },
         { type: "spacer" },
         { type: "break" },
@@ -432,6 +460,7 @@ var toolbar=new w2toolbar({
                     `)
                 fragment.filter("input").on("change", event => {
                     this.eraser_size = event.target.value;
+                    window.overlay.freeDrawingBrush.width=this.eraser_size;
                     this.setCount("eraser_size_btn", event.target.value);
                     window.postMessage(["eraser_size", event.target.value],"*")
                     this.refresh();
@@ -461,15 +490,79 @@ var toolbar=new w2toolbar({
     onClick(event) {
         switch(event.target){
             case "upload":
+                this.upload_mode=true
+                document.querySelector("#overlay").style.pointerEvents="auto";
                 this.click("canvas");
-                query("#upload_file").click()
+                this.click("selection");
+                this.show("confirm","cancel_overlay","add_image","delete_image");
+                this.enable("confirm","cancel_overlay","add_image","delete_image");
+                this.disable(...upload_button_lst);
+                query("#upload_file").click();
+                break;
+            case "resize_selection":
+                this.resize_mode=true;
+                this.disable(...resize_button_lst);
+                this.enable("confirm","cancel_overlay");
+                this.show("confirm","cancel_overlay");
+                window.postMessage(["resize_selection",""],"*");
+                document.querySelector("#overlay").style.pointerEvents="auto";
+                break;
+            case "confirm":
+                if(this.upload_mode)
+                {
+                    export_image();
+                }
+                else
+                {
+                    let sel_box=this.selection_box;
+                    window.postMessage(["resize_selection",sel_box.x,sel_box.y,sel_box.width,sel_box.height],"*");
+                }
+            case "cancel_overlay":
+                end_overlay();
+                this.hide("confirm","cancel_overlay","add_image","delete_image");
+                if(this.upload_mode){
+                    this.enable(...upload_button_lst);
+                }
+                else
+                {
+                    this.enable(...resize_button_lst);
+                    window.postMessage(["resize_selection","",""],"*");
+                }
+                this.disable("confirm","cancel_overlay","add_image","delete_image");
+                this.upload_mode=false;
+                this.resize_mode=false;
+                this.click("selection");
+                break;
+            case "add_image":
+                query("#upload_file").click();
+                break;
+            case "delete_image":
+                let active_obj = window.overlay.getActiveObject();
+                if(active_obj)
+                {
+                    window.overlay.remove(active_obj);
+                    window.overlay.renderAll();
+                }
+                else
+                {
+                    w2utils.notify("You need to select an image first",{error:true,timeout:2000,where:query("#container")})
+                }
                 break;
             case "load":
                 query("#upload_state").click()
                 break;
             case "outpaint":
+                this.disable(...outpaint_button_lst);
+                this.show(...outpaint_result_lst);
+                this.enable(...outpaint_result_lst);
             case "retry":
                 window.postMessage(["outpaint",""],"*")
+                break;
+            case "accept":
+            case "cancel":
+                window.postMessage(["click", event.target],"*");
+                this.hide(...outpaint_result_lst);
+                this.disable(...outpaint_result_lst);
                 break;
             case "eraser":
             case "selection":
@@ -477,18 +570,35 @@ var toolbar=new w2toolbar({
                 if(event.target=="eraser")
                 {
                     this.show("eraser_size","eraser_size_btn");
+                    window.overlay.freeDrawingBrush.width=this.eraser_size;
+                    window.overlay.isDrawingMode = true;
                 }
                 else
                 {
                     this.hide("eraser_size","eraser_size_btn");
+                    window.overlay.isDrawingMode = false;
                 }
-                window.postMessage(["mode", event.target],"*")
-                break;
-            case "resize_selection":
-                w2alert("DIV Clicked")
+                if(this.upload_mode)
+                {
+                    if(event.target=="canvas")
+                    {
+                        window.postMessage(["mode", event.target],"*")
+                        document.querySelector("#overlay").style.pointerEvents="none";
+                        document.querySelector("#overlay").style.opacity = 0.5;
+                    }
+                    else
+                    {
+                        document.querySelector("#overlay").style.pointerEvents="auto";
+                        document.querySelector("#overlay").style.opacity = 1.0;
+                    }
+                }
+                else
+                {
+                    window.postMessage(["mode", event.target],"*")
+                }
                 break;
             case "help":
-                w2alert("DIV Clicked")
+                w2alert("stablediffusion-infinity: https://github.com/lkwq007/stablediffusion-infinity");
                 break;
             default:
                 // clear, save, export, outpaint, retry
@@ -513,11 +623,84 @@ window.update_scale=function(val){
   w2ui.toolbar.scale_value=`${val}%`;
   w2ui.toolbar.refresh();
 }
-window.update_overlay=function(val){
-  w2ui.toolbar.scale_value=`${val}%`;
-  w2ui.toolbar.refresh();
+</script>
+<script>
+function onObjectScaled(e)
+{
+    let object = e.target;
+    if(object.isType("rect"))
+    {
+        let width=object.getScaledWidth();
+        let height=object.getScaledHeight();
+        object.scale(1);
+        width=Math.max(Math.min(width,window.overlay.width-object.left),256);
+        height=Math.max(Math.min(height,window.overlay.height-object.top),256);
+        let l=Math.max(Math.min(object.left,window.overlay.width-width-object.strokeWidth),0);
+        let t=Math.max(Math.min(object.top,window.overlay.height-height-object.strokeWidth),0);
+        object.set({ width: width, height: height, left:l,top:t})
+        window.w2ui.toolbar.selection_box={width: width, height: height, x:object.left, y:object.top};
+    }
+}
+function onObjectMoved(e)
+{
+    let object = e.target;
+    if(object.isType("rect"))
+    {   
+        let l=Math.max(Math.min(object.left,window.overlay.width-object.width-object.strokeWidth),0);
+        let t=Math.max(Math.min(object.top,window.overlay.height-object.height-object.strokeWidth),0);
+        object.set({left:l,top:t});
+        window.w2ui.toolbar.selection_box={width: object.width, height: object.height, x:object.left, y:object.top};
+    }
+}
+window.setup_overlay=function(width,height)
+{
+    canvas=new fabric.Canvas("overlay_canvas");
+    canvas.setDimensions({width:width,height:height});
+    canvas.freeDrawingBrush = new fabric.EraserBrush(canvas);
+    canvas.on("object:scaling", onObjectScaled);
+    canvas.on("object:moving", onObjectMoved);
+    window.overlay=canvas;
+    document.querySelector("#overlay").style.pointerEvents="none";
+}
+window.update_overlay=function(width,height)
+{
+    window.overlay.setDimensions({width:width,height:height},{backstoreOnly:true});
+    // document.querySelector("#overlay").style.pointerEvents="none";
+}
+window.adjust_selection=function(x,y,width,height)
+{
+    var rect = new fabric.Rect({
+        left: x,
+        top: y,
+        fill: "rgba(0,0,0,0)",
+        strokeWidth: 3, 
+        stroke: "rgba(255,200,200,1)",
+        width: width,
+        height: height,
+        lockRotation: true,
+    });
+    rect.setControlsVisibility({ mtr: false });
+    window.overlay.add(rect);
+}
+function add_image(url)
+{
+    fabric.Image.fromURL(url,function(img){
+        window.overlay.add(img);
+    },{left:100,top:100});
+}
+function export_image()
+{
+    data=window.overlay.toDataURL();
+    document.querySelector("#upload_content").value=data;
+    window.postMessage(["upload",""],"*");
+    end_overlay();
+}
+function end_overlay()
+{
+    window.overlay.clear();
+    document.querySelector("#overlay").style.opacity = 1.0;
+    document.querySelector("#overlay").style.pointerEvents="none";
 }
 </script>
-
 </body>
 </html>
