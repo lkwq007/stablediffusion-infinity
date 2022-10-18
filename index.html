@@ -104,7 +104,8 @@ from js import (
     update_eraser,
     update_scale,
     adjust_selection,
-    update_count
+    update_count,
+    enable_result_lst
 )
 
 
@@ -176,6 +177,7 @@ async def outpaint_func(event):
         img_candidate_lst[1]+=1
     elif event.data[2]=="prev":
         img_candidate_lst[1]-=1
+    enable_result_lst()
     if img_candidate_lst[0] is None:
         return
     lst=img_candidate_lst[0]

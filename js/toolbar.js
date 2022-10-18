@@ -195,7 +195,6 @@ var toolbar=new w2toolbar({
             case "outpaint":
                 this.disable(...outpaint_button_lst);
                 this.show(...outpaint_result_lst);
-                this.enable(...outpaint_result_lst);
                 if(this.outpaint_tip)
                 {
                     this.outpaint_tip=false;
@@ -203,6 +202,7 @@ var toolbar=new w2toolbar({
                 }
                 document.querySelector("#container").style.pointerEvents="none";
             case "retry":
+                this.disable(...outpaint_result_lst);
                 window.postMessage(["transfer",""],"*")
                 break;
             case "accept":
@@ -277,6 +277,9 @@ window.update_eraser=function(val,max_val){
 window.update_scale=function(val){
   w2ui.toolbar.scale_value=`${val}%`;
   w2ui.toolbar.refresh();
+}
+window.enable_result_lst=function(){
+  w2ui.toolbar.enable(...outpaint_result_lst);
 }
 function onObjectScaled(e)
 {
