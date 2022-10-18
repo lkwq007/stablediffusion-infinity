@@ -203,6 +203,7 @@ var toolbar=new w2toolbar({
                 document.querySelector("#container").style.pointerEvents="none";
             case "retry":
                 this.disable(...outpaint_result_lst);
+                this.enable("cancel");
                 window.postMessage(["transfer",""],"*")
                 break;
             case "accept":
