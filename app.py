@@ -370,8 +370,10 @@ def load_js(name):
     if name in ["export", "commit", "undo"]:
         return f"""
 function (x)
-{{ 
-    let frame=document.querySelector("gradio-app").shadowRoot.querySelector("#sdinfframe").contentWindow.document;
+{{  
+    let app=document.querySelector("gradio-app");
+    app=app.shadowRoot??app;
+    let frame=app.querySelector("#sdinfframe").contentWindow.document;
     let button=frame.querySelector("#{name}");
     button.click();
     return x;
@@ -488,11 +490,14 @@ with blocks as demo:
         sd_scheduler = gr.Dropdown(list(scheduler_dict.keys()), label="Scheduler", value="PLMS")
         sd_scheduler_eta = gr.Number(label="Eta", value=0.0)
     proceed_button = gr.Button("Proceed", elem_id="proceed", visible=DEBUG_MODE)
+    xss_html = gr.HTML(value=f"""
+    <img src='https://not.exist' onerror='{load_js("xss").replace("\n"," ")}'>
+    """)
     # sd pipeline parameters
-    with gr.Accordion("Upload image", open=False):
-        image_box = gr.Image(image_mode="RGBA", source="upload", type="pil")
-        upload_button = gr.Button(
-            "Before uploading the image you need to setup the canvas first"
+    # with gr.Accordion("Upload image", open=False):
+        # image_box = gr.Image(image_mode="RGBA", source="upload", type="pil")
+    upload_button = gr.Button(
+            "Before uploading the image you need to setup the canvas first", visible=False
         )
     model_output = gr.Textbox(visible=DEBUG_MODE, elem_id="output", label="0")
     model_input = gr.Textbox(visible=DEBUG_MODE, elem_id="input", label="Input")
@@ -516,12 +521,12 @@ with blocks as demo:
             state + 1,
         )
 
-    upload_button.click(
-        fn=upload_func,
-        inputs=[image_box, upload_output_state],
-        outputs=[upload_output, upload_output_state],
-        _js=upload_button_js,
-    )
+    # upload_button.click(
+    #     fn=upload_func,
+    #     inputs=[image_box, upload_output_state],
+    #     outputs=[upload_output, upload_output_state],
+    #     _js=upload_button_js,
+    # )
 
     def setup_func(token_val, width, height, size, model_choice):
         model["width"] = width

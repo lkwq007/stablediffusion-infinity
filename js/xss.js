@@ -1,4 +1,4 @@
-function(a){
+var setup_outpaint=function(){
     if(!window.my_observe_outpaint)
     {
         console.log("setup outpaint here");
@@ -19,5 +19,5 @@ function(a){
             characterData: true
         });
     }
-    return a;
-}
+}; 
+setup_outpaint();

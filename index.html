@@ -158,23 +158,23 @@ img_candidate_lst=[None,0]
 
 async def outpaint_func(event):
     base=base_lst[0]
-    #app=parent.document.querySelector("gradio-app")
-    #if app.shadowRoot:
-    #    app=app.shadowRoot
-    #base64_str_raw=app.querySelector("#output textarea").value
-    #base64_str_lst=base64_str_raw.split(",")
-    #arr=base.base64_to_numpy(base64_str_lst[0])
-    rgb_color=(100,120,140)
-    WIDTH_LIMIT=base.selection_size_w
-    HEIGHT_LIMIT=base.selection_size_h
-    x = np.ones((HEIGHT_LIMIT, WIDTH_LIMIT, 4)) 
-    x[:, :, 0:3] = rgb_color
-    y = np.ones((HEIGHT_LIMIT, WIDTH_LIMIT, 4))
-    y[:,:,0:3] = [min(40 + color, 255) for color in rgb_color]
-    c = np.linspace(0, 1, WIDTH_LIMIT)[None,:, None]
-    gradient = x + (y - x) * c
-    gradient[:,:,-1]=255
-    arr=gradient.astype(np.uint8)
+    if len(event.data)==2:
+        app=parent.document.querySelector("gradio-app")
+        if app.shadowRoot:
+            app=app.shadowRoot
+        base64_str_raw=app.querySelector("#output textarea").value
+        base64_str_lst=base64_str_raw.split(",")
+        img_candidate_lst[0]=base64_str_lst
+        img_candidate_lst[1]=0
+    elif event.data[2]=="next":
+        img_candidate_lst[1]+=1
+    elif event.data[2]=="prev":
+        img_candidate_lst[1]-=1
+    if img_candidate_lst[0] is None:
+        return
+    lst=img_candidate_lst[0]
+    idx=img_candidate_lst[1]
+    arr=base.base64_to_numpy(lst[idx%len(lst)])
     base.fill_selection(arr)
     base.draw_selection_box()
 
@@ -200,8 +200,8 @@ async def transfer_func(event):
     app=parent.document.querySelector("gradio-app")
     if app.shadowRoot:
         app=app.shadowRoot
-    app.shadowRoot.querySelector("#input textarea").value=sel_buffer_str
-    app.shadowRoot.querySelector("#proceed").click()
+    app.querySelector("#input textarea").value=sel_buffer_str
+    app.querySelector("#proceed").click()
 
 async def upload_func(event):
     base=base_lst[0]
@@ -324,10 +324,6 @@ async def message_func(event):
             await commit_func(event)
         elif event.data[1]=="cancel":
             await undo_func(event)
-        elif event.data[1]=="prev":
-            await prev_result_func(event)
-        elif event.data[1]=="next":
-            await next_result_func(event)
         elif event.data[1]=="zoom_in":
             await zoom_in_func(event)
         elif event.data[1]=="zoom_out":
@@ -363,7 +359,7 @@ _ = await asyncio.gather(
 </py-script>
 
 <script type="module">
-// import { w2ui,w2toolbar,w2field, query, w2alert} from "https://rawgit.com/vitmalina/w2ui/master/dist/w2ui.es6.min.js"
+// import { w2ui,w2toolbar,w2field,query,w2alert, w2utils,w2confirm} from "https://rawgit.com/vitmalina/w2ui/master/dist/w2ui.es6.min.js"
 import { w2ui,w2toolbar,w2field,query,w2alert, w2utils,w2confirm} from "./w2ui.es6.min.js"
 
 // https://stackoverflow.com/questions/36280818/how-to-convert-file-to-base64-in-javascript
@@ -553,6 +549,10 @@ var toolbar=new w2toolbar({
             case "load":
                 query("#upload_state").click()
                 break;
+            case "next":
+            case "prev":
+                window.postMessage(["outpaint", "", event.target], "*");
+                break;
             case "outpaint":
                 this.disable(...outpaint_button_lst);
                 this.show(...outpaint_result_lst);
@@ -564,7 +564,7 @@ var toolbar=new w2toolbar({
                 }
                 document.querySelector("#container").style.pointerEvents="none";
             case "retry":
-                window.postMessage(["outpaint",""],"*")
+                window.postMessage(["transfer",""],"*")
                 break;
             case "accept":
             case "cancel":

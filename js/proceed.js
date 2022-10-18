@@ -15,7 +15,9 @@ function(sel_buffer_str,
     scheduler,
     scheduler_eta,
     state){
-    sel_buffer = document.querySelector("gradio-app").shadowRoot.querySelector("#input textarea").value;
+    let app=document.querySelector("gradio-app");
+    app=app.shadowRoot??app;
+    sel_buffer=app.querySelector("#input textarea").value;
     return [
         sel_buffer,
         prompt_text,
