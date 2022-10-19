@@ -150,6 +150,8 @@ def my_resize(width, height):
         return 512, 512
     smaller = min(width, height)
     larger = max(width, height)
+    if larger>=768:
+        return width, height
     factor = 1
     if smaller < 290:
         factor = 2
@@ -198,22 +200,35 @@ scheduler_dict = {"PLMS": None, "DDIM": None, "K-LMS": None}
 
 
 class StableDiffusion:
-    def __init__(self, token="", model_name="CompVis/stable-diffusion-v1-4", **kwargs):
+    def __init__(self, token:str="", model_name:str="CompVis/stable-diffusion-v1-4", model_path:str=None, **kwargs):
         self.token = token
-        local_model = os.path.join("./model", model_name)
-        if os.path.exists(local_model):
-            model_name = local_model
-        if device == "cuda":
-            text2img = StableDiffusionPipeline.from_pretrained(
-                model_name,
-                revision="fp16",
-                torch_dtype=torch.float16,
-                use_auth_token=token,
-            )
+        original_checkpoint=False
+        if model_path and os.path.exists(model_path):
+            if model_path.endswith(".ckpt"):
+                original_checkpoint=True
+            elif model_path.endswith(".json"):
+                model_name=os.path.dirname(model_path)
+            else:
+                model_name=model_path
+        if original_checkpoint:
+            print(f"Converting & Loading {model_path}")
+            from convert_checkpoint import convert_checkpoint
+            text2img = convert_checkpoint(model_path)
+            if device == "cuda":
+                text2img.to(torch.float16)
         else:
-            text2img = StableDiffusionPipeline.from_pretrained(
-                model_name, use_auth_token=token,
-            )
+            print(f"Loading {model_name}")
+            if device == "cuda":
+                text2img = StableDiffusionPipeline.from_pretrained(
+                    model_name,
+                    revision="fp16",
+                    torch_dtype=torch.float16,
+                    use_auth_token=token,
+                )
+            else:
+                text2img = StableDiffusionPipeline.from_pretrained(
+                    model_name, use_auth_token=token,
+                )
         text_encoder = text2img.text_encoder
         tokenizer = text2img.tokenizer
         if os.path.exists("./embeddings"):
@@ -360,13 +375,40 @@ class StableDiffusion:
                 )["sample"]
         return images
 
+import argparse
+
+parser = argparse.ArgumentParser(description="stablediffusion-infinity")
+parser.add_argument("--port", type=int, help="listen port", dest="server_port")
+parser.add_argument("--host", type=str, help="host", dest="server_name")
+parser.add_argument("--share", action="store_true", help="share this app?")
+parser.add_argument("--debug", action="store_true", help="debug mode")
+parser.add_argument("--encrypt", action="store_true", help="using https?")
+parser.add_argument("--ssl_keyfile", type=str, help="path to ssl_keyfile")
+parser.add_argument("--ssl_certfile", type=str, help="path to ssl_certfile")
+parser.add_argument("--ssl_keyfile_password", type=str, help="ssl_keyfile_password")
+parser.add_argument("--auth", nargs=2, metavar=("username","password"), help="use username password")
+parser.add_argument("--remote_model", type=str, help="use a model (e.g. dreambooth fined) from huggingface hub", default="")
+parser.add_argument("--local_model", type=str, help="use a model stored on your PC", default="")
+
+# if __name__ == "__main__":
+#     args = parser.parse_args()
+# else:
+#     args = parser.parse_args(["--debug"])
+args = parser.parse_args(["--debug"])
+if args.auth is not None:
+    args.auth=tuple(args.auth)
 
 def get_model(token="", model_choice=""):
     if "model" not in model:
         if not USE_GLID and model_choice == "glid-3-xl-stable":
             model_choice = "stablediffusion"
-
-        if model_choice == "stablediffusion":
+        if model_choice == "local_model":
+            print(f"Using {args.local_model}")
+            tmp = StableDiffusion(token=token, model_path=args.local_model)
+        elif model_choice == "remote_model":
+            print(f"Using {args.remote_model}")
+            tmp = StableDiffusion(token=token, model_name=args.remote_model)
+        elif model_choice == "stablediffusion":
             tmp = StableDiffusion(token)
         elif model_choice == "waifudiffusion":
             tmp = StableDiffusion(token=token, model_name="hakurei/waifu-diffusion")
@@ -467,29 +509,6 @@ function (x)
 proceed_button_js = load_js("proceed")
 setup_button_js = load_js("setup")
 
-import argparse
-
-parser = argparse.ArgumentParser(description="stablediffusion-infinity")
-parser.add_argument("--port", type=int, help="listen port", dest="server_port")
-parser.add_argument("--host", type=str, help="host", dest="server_name")
-parser.add_argument("--share", action="store_true", help="share this app?")
-parser.add_argument("--debug", action="store_true", help="debug mode")
-parser.add_argument("--encrypt", action="store_true", help="using https?")
-parser.add_argument("--ssl_keyfile", type=str, help="path to ssl_keyfile")
-parser.add_argument("--ssl_certfile", type=str, help="path to ssl_certfile")
-parser.add_argument("--ssl_keyfile_password", type=str, help="ssl_keyfile_password")
-parser.add_argument("--auth", nargs=2, metavar=("username","password"), help="use username password")
-parser.add_argument("--remote_model", type=str, help="use a model (e.g. dreambooth fined) from huggingface hub", default="")
-parser.add_argument("--local_model", type=str, help="use a model stored on your PC", default="")
-
-# if __name__ == "__main__":
-#     args = parser.parse_args()
-# else:
-#     args = parser.parse_args(["--debug"])
-args = parser.parse_args(["--debug"])
-if args.auth is not None:
-    args.auth=tuple(args.auth)
-
 with blocks as demo:
     # title
     title = gr.Markdown(
@@ -501,6 +520,11 @@ with blocks as demo:
     frame = gr.HTML(test(2), visible=RUN_IN_SPACE)
     # setup
     if not RUN_IN_SPACE:
+        model_choices_lst=["stablediffusion", "waifudiffusion", "glid-3-xl-stable"]
+        if args.local_model:
+            model_choices_lst.insert(0, "local_model")
+        elif args.remote_model:
+            model_choices_lst.insert(0, "remote_model")
         with gr.Row():
             with gr.Column(scale=4, min_width=350):
                 token = gr.Textbox(
@@ -511,8 +535,8 @@ with blocks as demo:
             with gr.Column(scale=3, min_width=320):
                 model_selection = gr.Dropdown(
                     label="Choose a model here",
-                    choices=["stablediffusion", "waifudiffusion", "glid-3-xl-stable"],
-                    value="stablediffusion",
+                    choices=model_choices_lst,
+                    value=model_choices_lst[0],
                 )
             with gr.Column(scale=1, min_width=100):
                 canvas_width = gr.Number(
