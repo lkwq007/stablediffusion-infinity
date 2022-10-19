@@ -594,7 +594,7 @@ with blocks as demo:
         )
         setup_button = gr.Button("Click to Setup (may take a while)", variant="primary")
     with gr.Row():
-        with gr.Column(scale=2, min_width=150):
+        with gr.Column(scale=3, min_width=270):
             init_mode = gr.Radio(
                 label="Init Mode",
                 choices=[

@@ -631,7 +631,7 @@ def convert_checkpoint(checkpoint_path):
         type=str,
         help="Type of scheduler to use. Should be one of ['pndm', 'lms', 'ddim']",
     )
-    parser.add_argument("--dump_path", default=None, type=str, required=True, help="Path to the output model.")
+    parser.add_argument("--dump_path", default=None, type=str, help="Path to the output model.")
 
     args = parser.parse_args([])
     if args.original_config_file is None:

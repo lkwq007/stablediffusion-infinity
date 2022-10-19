@@ -238,7 +238,7 @@ var toolbar=new w2toolbar({
             case "accept":
             case "cancel":
                 this.hide(...outpaint_result_lst);
-                this.disable(...outpaint_result_lst);
+                this.disable(...outpaint_result_func_lst);
                 this.enable(...outpaint_button_lst);
                 document.querySelector("#container").style.pointerEvents="auto";
                 window.postMessage(["click", event.target],"*");
@@ -333,7 +333,7 @@ window.update_scale=function(val){
   w2ui.toolbar.refresh();
 }
 window.enable_result_lst=function(){
-  w2ui.toolbar.enable(...outpaint_result_func_lst);
+  w2ui.toolbar.enable(...outpaint_result_lst);
 }
 function onObjectScaled(e)
 {

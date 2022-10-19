@@ -204,5 +204,6 @@ class PhotometricCorrection:
         )
         self.parser=parser
 
-# if __name__ =="__main__":
-#     process=PhotometricCorrection()
+if __name__ =="__main__":
+    import sys
+    process=PhotometricCorrection()
