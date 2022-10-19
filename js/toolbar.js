@@ -369,7 +369,7 @@ window.setup_overlay=function(width,height)
         window.overlay.setDimensions({width:width,height:height});
         let app=parent.document.querySelector("gradio-app");
         app=app.shadowRoot??app;
-        app.querySelector("#sdinfframe").style.height=39+Number(height)+"px";
+        app.querySelector("#sdinfframe").style.height=80+Number(height)+"px";
         document.querySelector("#container").style.height= height+"px";
         document.querySelector("#container").style.width = width+"px";
     }
@@ -379,7 +379,7 @@ window.setup_overlay=function(width,height)
         canvas.setDimensions({width:width,height:height});
         let app=parent.document.querySelector("gradio-app");
         app=app.shadowRoot??app;
-        app.querySelector("#sdinfframe").style.height=39+Number(height)+"px";
+        app.querySelector("#sdinfframe").style.height=80+Number(height)+"px";
         canvas.freeDrawingBrush = new fabric.EraserBrush(canvas);
         canvas.on("object:scaling", onObjectScaled);
         canvas.on("object:moving", onObjectMoved);

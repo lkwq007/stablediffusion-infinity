@@ -1,7 +1,7 @@
 function(token_val, width, height, size, model_choice){
     let app=document.querySelector("gradio-app");
     app=app.shadowRoot??app;
-    app.querySelector("#sdinfframe").style.height=39+Number(height)+"px";
+    app.querySelector("#sdinfframe").style.height=80+Number(height)+"px";
     let frame=app.querySelector("#sdinfframe").contentWindow.document;
     if(frame.querySelector("#setup").value=="0")
     {

@@ -24,7 +24,7 @@ import skimage.measure
 from utils import *
 
 USE_NEW_DIFFUSERS = diffusers.__version__ >= "0.4.0"
-RUN_IN_SPACE="RUN_IN_HG_SPACE" in os.environ
+RUN_IN_SPACE = "RUN_IN_HG_SPACE" in os.environ
 try:
     abspath = os.path.abspath(__file__)
     dirname = os.path.dirname(abspath)
@@ -142,7 +142,7 @@ def my_resize(width, height):
         return 512, 512
     smaller = min(width, height)
     larger = max(width, height)
-    if larger>=768:
+    if larger >= 768:
         return width, height
     factor = 1
     if smaller < 290:
@@ -192,19 +192,26 @@ scheduler_dict = {"PLMS": None, "DDIM": None, "K-LMS": None}
 
 
 class StableDiffusion:
-    def __init__(self, token:str="", model_name:str="CompVis/stable-diffusion-v1-4", model_path:str=None, **kwargs):
+    def __init__(
+        self,
+        token: str = "",
+        model_name: str = "CompVis/stable-diffusion-v1-4",
+        model_path: str = None,
+        **kwargs,
+    ):
         self.token = token
-        original_checkpoint=False
+        original_checkpoint = False
         if model_path and os.path.exists(model_path):
             if model_path.endswith(".ckpt"):
-                original_checkpoint=True
+                original_checkpoint = True
             elif model_path.endswith(".json"):
-                model_name=os.path.dirname(model_path)
+                model_name = os.path.dirname(model_path)
             else:
-                model_name=model_path
+                model_name = model_path
         if original_checkpoint:
             print(f"Converting & Loading {model_path}")
             from convert_checkpoint import convert_checkpoint
+
             text2img = convert_checkpoint(model_path)
             if device == "cuda":
                 text2img.to(torch.float16)
@@ -367,6 +374,7 @@ class StableDiffusion:
                 )["sample"]
         return images
 
+
 import argparse
 
 parser = argparse.ArgumentParser(description="stablediffusion-infinity")
@@ -378,9 +386,18 @@ parser.add_argument("--encrypt", action="store_true", help="using https?")
 parser.add_argument("--ssl_keyfile", type=str, help="path to ssl_keyfile")
 parser.add_argument("--ssl_certfile", type=str, help="path to ssl_certfile")
 parser.add_argument("--ssl_keyfile_password", type=str, help="ssl_keyfile_password")
-parser.add_argument("--auth", nargs=2, metavar=("username","password"), help="use username password")
-parser.add_argument("--remote_model", type=str, help="use a model (e.g. dreambooth fined) from huggingface hub", default="")
-parser.add_argument("--local_model", type=str, help="use a model stored on your PC", default="")
+parser.add_argument(
+    "--auth", nargs=2, metavar=("username", "password"), help="use username password"
+)
+parser.add_argument(
+    "--remote_model",
+    type=str,
+    help="use a model (e.g. dreambooth fined) from huggingface hub",
+    default="",
+)
+parser.add_argument(
+    "--local_model", type=str, help="use a model stored on your PC", default=""
+)
 
 # if __name__ == "__main__":
 #     args = parser.parse_args()
@@ -388,7 +405,8 @@ parser.add_argument("--local_model", type=str, help="use a model stored on your 
 #     args = parser.parse_args(["--debug"])
 args = parser.parse_args(["--debug"])
 if args.auth is not None:
-    args.auth=tuple(args.auth)
+    args.auth = tuple(args.auth)
+
 
 def get_model(token="", model_choice=""):
     if "model" not in model:
@@ -517,12 +535,14 @@ with blocks as demo:
     title = gr.Markdown(
         """
     **stablediffusion-infinity**: Outpainting with Stable Diffusion on an infinite canvas: [https://github.com/lkwq007/stablediffusion-infinity](https://github.com/lkwq007/stablediffusion-infinity)
-    """, elem_id="markdown")
+    """,
+        elem_id="markdown",
+    )
     # frame
     frame = gr.HTML(test(2), visible=RUN_IN_SPACE)
     # setup
     if not RUN_IN_SPACE:
-        model_choices_lst=["stablediffusion", "waifudiffusion", "glid-3-xl-stable"]
+        model_choices_lst = ["stablediffusion", "waifudiffusion", "glid-3-xl-stable"]
         if args.local_model:
             model_choices_lst.insert(0, "local_model")
         elif args.remote_model:
@@ -542,11 +562,17 @@ with blocks as demo:
                 )
             with gr.Column(scale=1, min_width=100):
                 canvas_width = gr.Number(
-                    label="Canvas width", value=1024, precision=0, elem_id="canvas_width"
+                    label="Canvas width",
+                    value=1024,
+                    precision=0,
+                    elem_id="canvas_width",
                 )
             with gr.Column(scale=1, min_width=100):
                 canvas_height = gr.Number(
-                    label="Canvas height", value=600, precision=0, elem_id="canvas_height"
+                    label="Canvas height",
+                    value=600,
+                    precision=0,
+                    elem_id="canvas_height",
                 )
             with gr.Column(scale=1, min_width=100):
                 selection_size = gr.Number(
@@ -558,44 +584,6 @@ with blocks as demo:
         setup_button = gr.Button("Click to Setup (may take a while)", variant="primary")
     with gr.Row():
         with gr.Column(scale=3, min_width=270):
-            # canvas control
-            with gr.Tab("Generation Control", elem_id="tab-generation-control"):
-                with gr.Row():
-                    with gr.Column(scale=1, min_width=50):
-                        with gr.Group():
-                            sd_img2img = gr.Checkbox(
-                                label="Enable Img2Img", value=False
-                            )
-                            postprocess_check = gr.Checkbox(
-                                label="Photometric Correction", value=False
-                            )
-                            sd_resize = gr.Checkbox(
-                                label="Resize small input", value=True
-                            )
-                            safety_check = gr.Checkbox(
-                                label="Enable Safety Checker", value=True
-                            )
-                    with gr.Column(scale=1, min_width=50):
-                        with gr.Group():
-                            sd_generate_num = gr.Number(
-                                label="Sample number", value=1, precision=0
-                            )
-                            sd_seed_val = gr.Number(label="Seed", value=0, precision=0)
-                            with gr.Row():
-                                sd_random_seed_button = gr.Button("🎲").style(
-                                    full_width=False
-                                )
-                                sd_use_seed = gr.Checkbox(label="Use seed", value=False)
-
-        with gr.Column(scale=3, min_width=270):
-            sd_prompt = gr.Textbox(
-                label="Prompt", placeholder="input your prompt here!", lines=2
-            )
-            sd_negative_prompt = gr.Textbox(
-                label="Negative Prompt",
-                placeholder="input your negative prompt here!",
-                lines=2,
-            )
             init_mode = gr.Radio(
                 label="Init mode",
                 choices=[
@@ -608,6 +596,18 @@ with blocks as demo:
                 ],
                 value="patchmatch",
                 type="value",
+            )
+            # canvas control
+            sd_generate_num = gr.Number(label="Sample number", value=1, precision=0)
+
+        with gr.Column(scale=3, min_width=270):
+            sd_prompt = gr.Textbox(
+                label="Prompt", placeholder="input your prompt here!", lines=2
+            )
+            sd_negative_prompt = gr.Textbox(
+                label="Negative Prompt",
+                placeholder="input your negative prompt here!",
+                lines=2,
             )
         with gr.Column(scale=2, min_width=150):
             sd_strength = gr.Slider(
@@ -630,15 +630,24 @@ with blocks as demo:
         visible=False,
     )
     # sd pipeline parameters
+    sd_img2img = gr.Checkbox(label="Enable Img2Img", value=False, visible=False)
+    postprocess_check = gr.Checkbox(
+        label="Photometric Correction", value=False, visible=False
+    )
+    sd_resize = gr.Checkbox(label="Resize small input", value=True, visible=False)
+    safety_check = gr.Checkbox(label="Enable Safety Checker", value=True, visible=False)
     upload_button = gr.Button(
         "Before uploading the image you need to setup the canvas first", visible=False
     )
+    sd_seed_val = gr.Number(label="Seed", value=0, precision=0, visible=False)
+    sd_use_seed = gr.Checkbox(label="Use seed", value=False, visible=False)
     model_output = gr.Textbox(visible=DEBUG_MODE, elem_id="output", label="0")
     model_input = gr.Textbox(visible=DEBUG_MODE, elem_id="input", label="Input")
     upload_output = gr.Textbox(visible=DEBUG_MODE, elem_id="upload", label="0")
     model_output_state = gr.State(value=0)
     upload_output_state = gr.State(value=0)
     if not RUN_IN_SPACE:
+
         def setup_func(token_val, width, height, size, model_choice):
             try:
                 get_model(token_val, model_choice)
@@ -658,7 +667,13 @@ with blocks as demo:
 
         setup_button.click(
             fn=setup_func,
-            inputs=[token, canvas_width, canvas_height, selection_size, model_selection],
+            inputs=[
+                token,
+                canvas_width,
+                canvas_height,
+                selection_size,
+                model_selection,
+            ],
             outputs=[
                 token,
                 canvas_width,
@@ -702,12 +717,13 @@ launch_extra_kwargs = {
     # "favicon_path": ""
 }
 launch_kwargs = vars(args)
-launch_kwargs={k:v for k,v in launch_kwargs.items() if v is not None}
-launch_kwargs.pop("remote_model",None)
-launch_kwargs.pop("local_model",None)
+launch_kwargs = {k: v for k, v in launch_kwargs.items() if v is not None}
+launch_kwargs.pop("remote_model", None)
+launch_kwargs.pop("local_model", None)
 launch_kwargs.update(launch_extra_kwargs)
 try:
     import google.colab
+
     launch_kwargs["debug"] = True
 except:
     pass
@@ -715,9 +731,8 @@ except:
 if RUN_IN_SPACE:
     demo.launch()
 elif args.debug:
-    launch_kwargs["server_name"]="0.0.0.0"
+    launch_kwargs["server_name"] = "0.0.0.0"
     demo.launch(**launch_kwargs)
 else:
     demo.launch(**launch_kwargs)
-
 
