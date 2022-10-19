@@ -65,11 +65,11 @@ class PhotometricCorrection:
 
     def run(self, original_image, inpainted_image, mode="mask_mode"):
         print(f"[PIE] start")
-        if input_arr[:,:,-1].sum()<1:
-            return inpainted_image
         if mode=="disabled":
             return inpainted_image
         input_arr=np.array(original_image)
+        if input_arr[:,:,-1].sum()<1:
+            return inpainted_image
         output_arr=np.array(inpainted_image)
         mask=input_arr[:,:,-1]
         mask=255-mask
