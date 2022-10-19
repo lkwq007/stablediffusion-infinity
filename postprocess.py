@@ -44,6 +44,7 @@ class PhotometricCorrection:
         self.get_parser("cli")
         args=self.parser.parse_args(["--method","grid","-g","src","-s","a","-t","a","-o","a"])
         args.mpi_sync_interval = getattr(args, "mpi_sync_interval", 0)
+        self.backend=args.backend
         self.args=args
         proc: BaseProcessor
         proc = GridProcessor(
@@ -206,4 +207,30 @@ class PhotometricCorrection:
 
 if __name__ =="__main__":
     import sys
-    process=PhotometricCorrection()
+    import io
+    import base64
+    from PIL import Image
+    def base64_to_pil(base64_str):
+        data = base64.b64decode(str(base64_str))
+        pil = Image.open(io.BytesIO(data))
+        return pil
+
+    def pil_to_base64(out_pil):
+        out_buffer = io.BytesIO()
+        out_pil.save(out_buffer, format="PNG")
+        out_buffer.seek(0)
+        base64_bytes = base64.b64encode(out_buffer.read())
+        base64_str = base64_bytes.decode("ascii")
+        return base64_str
+    correction_func=PhotometricCorrection()
+    while True:
+        buffer = sys.stdin.readline()
+        if not buffer:
+            break
+        lst=buffer.split(",")
+        img0=base64_to_pil(lst[0])
+        img1=base64_to_pil(lst[1])
+        ret=correction_func.run(img0,img1,mode=lst[2])
+        ret_base64=pil_to_base64(ret)
+        sys.stdout.write(f"{ret_base64}\n".encode())
+        sys.stdout.flush()

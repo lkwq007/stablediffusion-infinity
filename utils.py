@@ -160,8 +160,39 @@ except Exception as e:
     print(e, "so PhotometricCorrection is disabled")
     class DummyCorrection:
         def __init__(self):
+            self.backend=""
             pass
         def run(self,a,b,**kwargs):
             return b
     correction_func=DummyCorrection()
 
+if "taichi" in correction_func.backend:
+    import sys
+    import io
+    import base64
+    from PIL import Image
+    def base64_to_pil(base64_str):
+        data = base64.b64decode(str(base64_str))
+        pil = Image.open(io.BytesIO(data))
+        return pil
+
+    def pil_to_base64(out_pil):
+        out_buffer = io.BytesIO()
+        out_pil.save(out_buffer, format="PNG")
+        out_buffer.seek(0)
+        base64_bytes = base64.b64encode(out_buffer.read())
+        base64_str = base64_bytes.decode("ascii")
+        return base64_str
+    from subprocess import Popen, PIPE, STDOUT
+    class SubprocessCorrection:
+        def __init__(self):
+            self.backend=correction_func.backend
+            self.child= Popen(["python", "postprocess.py"], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+        def run(self,img_input,img_inpainted,mode):
+            base64_str_input = pil_to_base64(img_input)
+            base64_str_inpainted = pil_to_base64(img_inpainted)
+            self.child.stdin.write(f"{base64_str_input},{base64_str_inpainted},{mode}\n".encode())
+            self.child.stdin.flush()
+            out = self.child.stdout.readline()
+            base64_str=out.decode().strip()
+            return base64_to_pil(base64_str)

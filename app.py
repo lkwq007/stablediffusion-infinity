@@ -21,16 +21,18 @@ import gradio as gr
 import base64
 import skimage
 import skimage.measure
-from utils import *
 
-USE_NEW_DIFFUSERS = diffusers.__version__ >= "0.4.0"
-RUN_IN_SPACE = "RUN_IN_HG_SPACE" in os.environ
 try:
     abspath = os.path.abspath(__file__)
     dirname = os.path.dirname(abspath)
     os.chdir(dirname)
 except:
     pass
+
+from utils import *
+
+USE_NEW_DIFFUSERS = diffusers.__version__ >= "0.4.0"
+RUN_IN_SPACE = "RUN_IN_HG_SPACE" in os.environ
 
 sys.path.append("./glid_3_xl_stable")
 
