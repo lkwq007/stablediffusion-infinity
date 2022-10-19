@@ -57,14 +57,16 @@ class PhotometricCorrection:
             args.grid_x,
             args.grid_y,
         )
-        if not self.quite:
-            print(
-            f"Successfully initialize PIE {args.method} solver "
+        print(
+            f"[PIE]Successfully initialize PIE {args.method} solver "
             f"with {args.backend} backend"
         )
         self.proc=proc
 
     def run(self, original_image, inpainted_image, mode="mask_mode"):
+        print(f"[PIE] start")
+        if input_arr[:,:,-1].sum()<1:
+            return inpainted_image
         if mode=="disabled":
             return inpainted_image
         input_arr=np.array(original_image)
@@ -99,15 +101,13 @@ class PhotometricCorrection:
         for i in range(0, args.n, args.p):
             if proc.root:
                 result, err = proc.step(args.p)  # type: ignore
-                if not self.quite:
-                    print(f"PIE: Iter {i + args.p}, abs_err {err}")
+                print(f"[PIE] Iter {i + args.p}, abs_err {err}")
             else:
                 proc.step(args.p)
 
         if proc.root:
             dt = time.time() - t
-            if not self.quite:
-                print(f"Time elapsed: {dt:.4f}s")
+            print(f"[PIE] Time elapsed: {dt:.4f}s")
             # make sure consistent with dummy process
             return Image.fromarray(result)
 
@@ -229,12 +229,19 @@ if __name__ =="__main__":
     correction_func=PhotometricCorrection(quite=True)
     while True:
         buffer = sys.stdin.readline()
-        if not buffer:
+        print(f"[PIE] suprocess {len(buffer)} {type(buffer)} ")
+        if len(buffer)==0:
             break
-        lst=buffer.split(",")
+        if isinstance(buffer,str):
+            lst=buffer.strip().split(",")
+        else:
+            lst=buffer.decode("ascii").strip().split(",")
         img0=base64_to_pil(lst[0])
         img1=base64_to_pil(lst[1])
         ret=correction_func.run(img0,img1,mode=lst[2])
         ret_base64=pil_to_base64(ret)
-        sys.stdout.write(f"{ret_base64}\n".encode())
+        if isinstance(buffer,str):
+            sys.stdout.write(f"{ret_base64}\n")
+        else:
+            sys.stdout.write(f"{ret_base64}\n".encode())
         sys.stdout.flush()

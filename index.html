@@ -190,9 +190,9 @@ async def outpaint_func(event):
 async def undo_func(event):
     base=base_lst[0]
     img_candidate_lst[0]=None
+    base.canvas[2].clear()
     if base.sel_dirty:
-        base.canvas[2].clear()
-        base.sel_buffer = base.sel_buffer_bak.copy()
+        base.sel_buffer = np.zeros((base.selection_size_h, base.selection_size_w, 4), dtype=np.uint8)
         base.sel_dirty = False
 
 async def commit_func(event):
