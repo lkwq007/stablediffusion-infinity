@@ -24,10 +24,13 @@ import skimage.measure
 from utils import *
 
 USE_NEW_DIFFUSERS = diffusers.__version__ >= "0.4.0"
-
-abspath = os.path.abspath(__file__)
-dirname = os.path.dirname(abspath)
-os.chdir(dirname)
+RUN_IN_SPACE="RUN_IN_HG_SPACE" in os.environ
+try:
+    abspath = os.path.abspath(__file__)
+    dirname = os.path.dirname(abspath)
+    os.chdir(dirname)
+except:
+    pass
 
 sys.path.append("./glid_3_xl_stable")
 
@@ -43,7 +46,7 @@ except:
     cuda_available = False
 finally:
     if sys.platform == "darwin":
-        device = "mps"
+        device = "mps" if torch.backends.mps.is_available() else "cpu"
     elif cuda_available:
         device = "cuda"
     else:
@@ -70,7 +73,7 @@ def load_html():
 def test(x):
     x = load_html()
     return f"""<iframe id="sdinfframe" style="width: 100%; height: 600px" name="result" allow="midi; geolocation; microphone; camera; 
-    display-capture; encrypted-media;" sandbox="allow-modals allow-forms 
+    display-capture; encrypted-media; vertical-scroll 'none'" sandbox="allow-modals allow-forms 
     allow-scripts allow-same-origin allow-popups 
     allow-top-navigation-by-user-activation allow-downloads" allowfullscreen="" 
     allowpaymentrequest="" frameborder="0" srcdoc='{x}'></iframe>"""
@@ -106,7 +109,15 @@ except Exception as e:
 PAINT_SELECTION = "✥"
 IMAGE_SELECTION = "🖼️"
 BRUSH_SELECTION = "🖌️"
-blocks = gr.Blocks()
+blocks = gr.Blocks(
+    title="StableDiffusion-Infinity",
+    css="""
+.tabs {
+margin-top: 0rem;
+margin-bottom: 0rem;
+}
+""",
+)
 model = {}
 
 
@@ -132,23 +143,88 @@ def prepare_scheduler(scheduler):
     return scheduler
 
 
-scheduler_dict = {"PLMS":None,"DDIM":None,"K-LMS":None}
+def my_resize(width, height):
+    if width >= 512 and height >= 512:
+        return width, height
+    if width == height:
+        return 512, 512
+    smaller = min(width, height)
+    larger = max(width, height)
+    factor = 1
+    if smaller < 290:
+        factor = 2
+    elif smaller < 330:
+        factor = 1.75
+    elif smaller < 384:
+        factor = 1.375
+    elif smaller < 400:
+        factor = 1.25
+    elif smaller < 450:
+        factor = 1.125
+    return int(factor * width), int(factor * height)
+
+
+def load_learned_embed_in_clip(
+    learned_embeds_path, text_encoder, tokenizer, token=None
+):
+    # https://colab.research.google.com/github/huggingface/notebooks/blob/main/diffusers/stable_conceptualizer_inference.ipynb
+    loaded_learned_embeds = torch.load(learned_embeds_path, map_location="cpu")
+
+    # separate token and the embeds
+    trained_token = list(loaded_learned_embeds.keys())[0]
+    embeds = loaded_learned_embeds[trained_token]
+
+    # cast to dtype of text_encoder
+    dtype = text_encoder.get_input_embeddings().weight.dtype
+    embeds.to(dtype)
+
+    # add the token in tokenizer
+    token = token if token is not None else trained_token
+    num_added_tokens = tokenizer.add_tokens(token)
+    if num_added_tokens == 0:
+        raise ValueError(
+            f"The tokenizer already contains the token {token}. Please pass a different `token` that is not already in the tokenizer."
+        )
+
+    # resize the token embeddings
+    text_encoder.resize_token_embeddings(len(tokenizer))
+
+    # get the id for the token and assign the embeds
+    token_id = tokenizer.convert_tokens_to_ids(token)
+    text_encoder.get_input_embeddings().weight.data[token_id] = embeds
+
+
+scheduler_dict = {"PLMS": None, "DDIM": None, "K-LMS": None}
 
 
 class StableDiffusion:
-    def __init__(self, token="", model_name="CompVis/stable-diffusion-v1-4"):
+    def __init__(self, token="", model_name="CompVis/stable-diffusion-v1-4", **kwargs):
         self.token = token
+        local_model = os.path.join("./model", model_name)
+        if os.path.exists(local_model):
+            model_name = local_model
         if device == "cuda":
             text2img = StableDiffusionPipeline.from_pretrained(
                 model_name,
                 revision="fp16",
                 torch_dtype=torch.float16,
                 use_auth_token=token,
-            ).to(device)
+            )
         else:
             text2img = StableDiffusionPipeline.from_pretrained(
                 model_name, use_auth_token=token,
-            ).to(device)
+            )
+        text_encoder = text2img.text_encoder
+        tokenizer = text2img.tokenizer
+        if os.path.exists("./embeddings"):
+            for item in os.listdir("./embeddings"):
+                if item.endswith(".bin"):
+                    load_learned_embed_in_clip(
+                        os.path.join("./embeddings", item),
+                        text2img.text_encoder,
+                        text2img.tokenizer,
+                    )
+        text2img.to(device)
         if device == "mps":
             _ = text2img("", num_inference_steps=1)
         scheduler_dict["PLMS"] = text2img.scheduler
@@ -225,11 +301,15 @@ class StableDiffusion:
                 item.safety_checker = self.safety_checker
             else:
                 item.safety_checker = lambda images, **kwargs: (images, False)
+        width, height = image_pil.size
         sel_buffer = np.array(image_pil)
         img = sel_buffer[:, :, 0:3]
         mask = sel_buffer[:, :, -1]
         nmask = 255 - mask
-        process_size = 512 if resize_check else model["sel_size"]
+        process_width = width
+        process_height = height
+        if resize_check:
+            process_width, process_height = my_resize(width, height)
         extra_kwargs = {
             "num_inference_steps": step,
             "guidance_scale": guidance_scale,
@@ -247,7 +327,7 @@ class StableDiffusion:
                 images = img2img(
                     prompt=prompt,
                     init_image=init_image.resize(
-                        (process_size, process_size), resample=SAMPLING_MODE
+                        (process_width, process_height), resample=SAMPLING_MODE
                     ),
                     strength=strength,
                     **extra_kwargs,
@@ -264,9 +344,9 @@ class StableDiffusion:
                 images = inpaint(
                     prompt=prompt,
                     init_image=init_image.resize(
-                        (process_size, process_size), resample=SAMPLING_MODE
+                        (process_width, process_height), resample=SAMPLING_MODE
                     ),
-                    mask_image=mask_image.resize((process_size, process_size)),
+                    mask_image=mask_image.resize((process_width, process_height)),
                     strength=strength,
                     **extra_kwargs,
                 )["sample"]
@@ -274,8 +354,8 @@ class StableDiffusion:
             with autocast("cuda"):
                 images = text2img(
                     prompt=prompt,
-                    height=process_size,
-                    width=process_size,
+                    height=process_width,
+                    width=process_height,
                     **extra_kwargs,
                 )["sample"]
         return images
@@ -320,6 +400,7 @@ def run_outpaint(
 ):
     data = base64.b64decode(str(sel_buffer_str))
     pil = Image.open(io.BytesIO(data))
+    width, height = pil.size
     sel_buffer = np.array(pil)
     cur_model = get_model()
     images = cur_model.run(
@@ -338,17 +419,15 @@ def run_outpaint(
         scheduler=scheduler,
         scheduler_eta=scheduler_eta,
         enable_img2img=enable_img2img,
-        width=max(model["sel_size"], 512),
-        height=max(model["sel_size"], 512),
+        width=width,
+        height=height,
     )
-    base64_str_lst=[]
+    base64_str_lst = []
     for image in images:
         if use_correction:
             image = correction_func.run(pil.resize(image.size), image)
             image = Image.fromarray(image)
-        resized_img = image.resize(
-            (model["sel_size"], model["sel_size"]), resample=SAMPLING_MODE,
-        )
+        resized_img = image.resize((width, height), resample=SAMPLING_MODE,)
         out = sel_buffer.copy()
         out[:, :, 0:3] = np.array(resized_img)
         out[:, :, -1] = 255
@@ -385,11 +464,32 @@ function (x)
     return ret
 
 
-upload_button_js = load_js("upload")
-outpaint_button_js = load_js("outpaint")
 proceed_button_js = load_js("proceed")
-mode_js = load_js("mode")
 setup_button_js = load_js("setup")
+
+import argparse
+
+parser = argparse.ArgumentParser(description="stablediffusion-infinity")
+parser.add_argument("--port", type=int, help="listen port", dest="server_port")
+parser.add_argument("--host", type=str, help="host", dest="server_name")
+parser.add_argument("--share", action="store_true", help="share this app?")
+parser.add_argument("--debug", action="store_true", help="debug mode")
+parser.add_argument("--encrypt", action="store_true", help="using https?")
+parser.add_argument("--ssl_keyfile", type=str, help="path to ssl_keyfile")
+parser.add_argument("--ssl_certfile", type=str, help="path to ssl_certfile")
+parser.add_argument("--ssl_keyfile_password", type=str, help="ssl_keyfile_password")
+parser.add_argument("--auth", nargs=2, metavar=("username","password"), help="use username password")
+parser.add_argument("--remote_model", type=str, help="use a model (e.g. dreambooth fined) from huggingface hub", default="")
+parser.add_argument("--local_model", type=str, help="use a model stored on your PC", default="")
+
+# if __name__ == "__main__":
+#     args = parser.parse_args()
+# else:
+#     args = parser.parse_args(["--debug"])
+args = parser.parse_args(["--debug"])
+if args.auth is not None:
+    args.auth=tuple(args.auth)
+
 with blocks as demo:
     # title
     title = gr.Markdown(
@@ -398,53 +498,69 @@ with blocks as demo:
     """
     )
     # frame
-    frame = gr.HTML(test(2), visible=False)
+    frame = gr.HTML(test(2), visible=RUN_IN_SPACE)
     # setup
-    with gr.Row():
-        with gr.Column(scale=4, min_width=350):
-            token = gr.Textbox(
-                label="Huggingface token",
-                value=get_token(),
-                placeholder="Input your token here",
-            )
-        with gr.Column(scale=3, min_width=320):
-            model_selection = gr.Radio(
-                label="Choose a model here",
-                choices=["stablediffusion", "waifudiffusion", "glid-3-xl-stable"],
-                value="stablediffusion",
-            )
-        with gr.Column(scale=1, min_width=100):
-            canvas_width = gr.Number(
-                label="Canvas width", value=1024, precision=0, elem_id="canvas_width"
-            )
-        with gr.Column(scale=1, min_width=100):
-            canvas_height = gr.Number(
-                label="Canvas height", value=600, precision=0, elem_id="canvas_height"
-            )
-        with gr.Column(scale=1, min_width=100):
-            selection_size = gr.Number(
-                label="Selection box size",
-                value=256,
-                precision=0,
-                elem_id="selection_size",
-            )
-    setup_button = gr.Button("Click to Setup (may take a while)", variant="primary")
+    if not RUN_IN_SPACE:
+        with gr.Row():
+            with gr.Column(scale=4, min_width=350):
+                token = gr.Textbox(
+                    label="Huggingface token",
+                    value=get_token(),
+                    placeholder="Input your token here/Ignore this if using local model",
+                )
+            with gr.Column(scale=3, min_width=320):
+                model_selection = gr.Dropdown(
+                    label="Choose a model here",
+                    choices=["stablediffusion", "waifudiffusion", "glid-3-xl-stable"],
+                    value="stablediffusion",
+                )
+            with gr.Column(scale=1, min_width=100):
+                canvas_width = gr.Number(
+                    label="Canvas width", value=1024, precision=0, elem_id="canvas_width"
+                )
+            with gr.Column(scale=1, min_width=100):
+                canvas_height = gr.Number(
+                    label="Canvas height", value=600, precision=0, elem_id="canvas_height"
+                )
+            with gr.Column(scale=1, min_width=100):
+                selection_size = gr.Number(
+                    label="Selection box size",
+                    value=256,
+                    precision=0,
+                    elem_id="selection_size",
+                )
+        setup_button = gr.Button("Click to Setup (may take a while)", variant="primary")
     with gr.Row():
         with gr.Column(scale=3, min_width=270):
             # canvas control
-            canvas_control = gr.Radio(
-                label="Control",
-                choices=[PAINT_SELECTION, IMAGE_SELECTION, BRUSH_SELECTION],
-                value=PAINT_SELECTION,
-                elem_id="control",
-            )
-            with gr.Box():
-                with gr.Group():
-                    run_button = gr.Button(value="Outpaint")
-                    export_button = gr.Button(value="Export")
-                    commit_button = gr.Button(value="✓")
-                    retry_button = gr.Button(value="⟳")
-                    undo_button = gr.Button(value="↶")
+            with gr.Tab("Generation Control", elem_id="tab-generation-control"):
+                with gr.Row():
+                    with gr.Column(scale=1, min_width=50):
+                        with gr.Group():
+                            sd_img2img = gr.Checkbox(
+                                label="Enable Img2Img", value=False
+                            )
+                            postprocess_check = gr.Checkbox(
+                                label="Photometric Correction", value=False
+                            )
+                            sd_resize = gr.Checkbox(
+                                label="Resize small input", value=True
+                            )
+                            safety_check = gr.Checkbox(
+                                label="Enable Safety Checker", value=True
+                            )
+                    with gr.Column(scale=1, min_width=50):
+                        with gr.Group():
+                            sd_generate_num = gr.Number(
+                                label="Sample number", value=1, precision=0
+                            )
+                            sd_seed_val = gr.Number(label="Seed", value=0, precision=0)
+                            with gr.Row():
+                                sd_random_seed_button = gr.Button("🎲").style(
+                                    full_width=False
+                                )
+                                sd_use_seed = gr.Checkbox(label="Use seed", value=False)
+
         with gr.Column(scale=3, min_width=270):
             sd_prompt = gr.Textbox(
                 label="Prompt", placeholder="input your prompt here!", lines=2
@@ -454,18 +570,6 @@ with blocks as demo:
                 placeholder="input your negative prompt here!",
                 lines=2,
             )
-        with gr.Column(scale=2, min_width=150):
-            with gr.Box():
-                sd_resize = gr.Checkbox(label="Resize input to 512x512", value=True)
-                safety_check = gr.Checkbox(label="Enable Safety Checker", value=True)
-            sd_strength = gr.Slider(
-                label="Strength", minimum=0.0, maximum=1.0, value=0.75, step=0.01
-            )
-        with gr.Column(scale=1, min_width=150):
-            sd_step = gr.Number(label="Step", value=50, precision=0)
-            sd_guidance = gr.Number(label="Guidance", value=7.5)
-    with gr.Row():
-        with gr.Column(scale=4, min_width=500):
             init_mode = gr.Radio(
                 label="Init mode",
                 choices=[
@@ -479,97 +583,69 @@ with blocks as demo:
                 value="patchmatch",
                 type="value",
             )
-        with gr.Column(scale=2, min_width=250):
-            postprocess_check = gr.Checkbox(label="Photometric Correction", value=False)
-    with gr.Row():
-        sd_img2img = gr.Checkbox(label="Img2Img", value=False)
-        sd_random_seed_button = gr.Button("Random Seed")
-        sd_use_seed = gr.Checkbox(label="Use seed", value=False)
-        sd_seed_val = gr.Number(label="Seed", value=0, precision=0)
-        sd_generate_num = gr.Number(label="Generation number", value=1, precision=0)
-        sd_scheduler = gr.Dropdown(list(scheduler_dict.keys()), label="Scheduler", value="PLMS")
-        sd_scheduler_eta = gr.Number(label="Eta", value=0.0)
+        with gr.Column(scale=2, min_width=150):
+            sd_strength = gr.Slider(
+                label="Strength", minimum=0.0, maximum=1.0, value=0.75, step=0.01
+            )
+            sd_scheduler = gr.Dropdown(
+                list(scheduler_dict.keys()), label="Scheduler", value="PLMS"
+            )
+
+        with gr.Column(scale=1, min_width=150):
+            sd_step = gr.Number(label="Step", value=50, precision=0)
+            sd_guidance = gr.Number(label="Guidance", value=7.5)
+            sd_scheduler_eta = gr.Number(label="Eta", value=0.0)
+
     proceed_button = gr.Button("Proceed", elem_id="proceed", visible=DEBUG_MODE)
-    xss_js=load_js("xss").replace("\n"," ")
-    xss_html = gr.HTML(value=f"""
-    <img src='https://not.exist' onerror='{xss_js}'>"""
+    xss_js = load_js("xss").replace("\n", " ")
+    xss_html = gr.HTML(
+        value=f"""
+    <img src='https://not.exist' onerror='{xss_js}'>""",
+        visible=False,
     )
     # sd pipeline parameters
-    # with gr.Accordion("Upload image", open=False):
-        # image_box = gr.Image(image_mode="RGBA", source="upload", type="pil")
     upload_button = gr.Button(
-            "Before uploading the image you need to setup the canvas first", visible=False
-        )
+        "Before uploading the image you need to setup the canvas first", visible=False
+    )
     model_output = gr.Textbox(visible=DEBUG_MODE, elem_id="output", label="0")
     model_input = gr.Textbox(visible=DEBUG_MODE, elem_id="input", label="Input")
     upload_output = gr.Textbox(visible=DEBUG_MODE, elem_id="upload", label="0")
     model_output_state = gr.State(value=0)
     upload_output_state = gr.State(value=0)
-    # canvas_state = gr.State({"width":1024,"height":600,"selection_size":384})
+    if not RUN_IN_SPACE:
+        def setup_func(token_val, height, model_choice):
+            try:
+                get_model(token_val, model_choice)
+            except Exception as e:
+                print(e)
+                return {token: gr.update(value=str(e))}
+            return {
+                token: gr.update(visible=False),
+                canvas_width: gr.update(visible=False),
+                canvas_height: gr.update(visible=False),
+                selection_size: gr.update(visible=False),
+                setup_button: gr.update(visible=False),
+                frame: gr.update(visible=True),
+                upload_button: gr.update(value="Upload Image"),
+                model_selection: gr.update(visible=False),
+            }
 
-    def upload_func(image, state):
-        pil = image.convert("RGBA")
-        w, h = pil.size
-        if w > model["width"] - 100 or h > model["height"] - 100:
-            pil = contain_func(pil, (model["width"] - 100, model["height"] - 100))
-        out_buffer = io.BytesIO()
-        pil.save(out_buffer, format="PNG")
-        out_buffer.seek(0)
-        base64_bytes = base64.b64encode(out_buffer.read())
-        base64_str = base64_bytes.decode("ascii")
-        return (
-            gr.update(label=str(state + 1), value=base64_str),
-            state + 1,
+        setup_button.click(
+            fn=setup_func,
+            inputs=[token, canvas_height, model_selection],
+            outputs=[
+                token,
+                canvas_width,
+                canvas_height,
+                selection_size,
+                setup_button,
+                frame,
+                upload_button,
+                model_selection,
+            ],
+            _js=setup_button_js,
         )
 
-    # upload_button.click(
-    #     fn=upload_func,
-    #     inputs=[image_box, upload_output_state],
-    #     outputs=[upload_output, upload_output_state],
-    #     _js=upload_button_js,
-    # )
-
-    def setup_func(token_val, width, height, size, model_choice):
-        model["width"] = width
-        model["height"] = height
-        model["sel_size"] = size
-        try:
-            get_model(token_val, model_choice)
-        except Exception as e:
-            print(e)
-            return {token: gr.update(value=str(e))}
-        return {
-            token: gr.update(visible=False),
-            canvas_width: gr.update(visible=False),
-            canvas_height: gr.update(visible=False),
-            selection_size: gr.update(visible=False),
-            setup_button: gr.update(visible=False),
-            frame: gr.update(visible=True),
-            upload_button: gr.update(value="Upload Image"),
-            model_selection: gr.update(visible=False),
-        }
-
-    setup_button.click(
-        fn=setup_func,
-        inputs=[token, canvas_width, canvas_height, selection_size, model_selection],
-        outputs=[
-            token,
-            canvas_width,
-            canvas_height,
-            selection_size,
-            setup_button,
-            frame,
-            upload_button,
-            model_selection,
-        ],
-        _js=setup_button_js,
-    )
-    run_button.click(
-        fn=None, inputs=[run_button], outputs=[run_button], _js=outpaint_button_js,
-    )
-    retry_button.click(
-        fn=None, inputs=[run_button], outputs=[run_button], _js=outpaint_button_js,
-    )
     proceed_button.click(
         fn=run_outpaint,
         inputs=[
@@ -594,34 +670,28 @@ with blocks as demo:
         outputs=[model_output, sd_prompt, model_output_state],
         _js=proceed_button_js,
     )
-    export_button.click(
-        fn=None, inputs=[export_button], outputs=[export_button], _js=load_js("export")
-    )
-    commit_button.click(
-        fn=None, inputs=[export_button], outputs=[export_button], _js=load_js("commit")
-    )
-    undo_button.click(
-        fn=None, inputs=[export_button], outputs=[export_button], _js=load_js("undo")
-    )
-    canvas_control.change(
-        fn=None, inputs=[canvas_control], outputs=[canvas_control], _js=mode_js,
-    )
-if __name__ == "__main__":
-    import argparse
 
-    parser = argparse.ArgumentParser(description="stablediffusion-infinity")
-    parser.add_argument("--port", type=int, help="listen port", default=7860)
-    parser.add_argument("--host", type=str, help="host", default="127.0.0.1")
-    parser.add_argument("--share", action="store_true", help="share this app?")
-    args = parser.parse_args()
-    if args.share:
-        try:
-            import google.colab
+launch_extra_kwargs = {
+    "show_error": True,
+    # "favicon_path": ""
+}
+launch_kwargs = vars(args)
+launch_kwargs={k:v for k,v in launch_kwargs.items() if v is not None}
+launch_kwargs.pop("remote_model",None)
+launch_kwargs.pop("local_model",None)
+launch_kwargs.update(launch_extra_kwargs)
+try:
+    import google.colab
+    launch_kwargs["debug"] = True
+except:
+    pass
 
-            IN_COLAB = True
-        except:
-            IN_COLAB = False
-        demo.launch(share=True, debug=IN_COLAB)
-    else:
-        demo.launch(server_name=args.host, server_port=args.port)
+if RUN_IN_SPACE:
+    demo.launch()
+elif args.debug:
+    launch_kwargs["server_name"]="0.0.0.0"
+    demo.launch(**launch_kwargs)
+else:
+    demo.launch(**launch_kwargs)
+
 

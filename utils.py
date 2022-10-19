@@ -161,6 +161,7 @@ except Exception as e:
     class DummyCorrection:
         def __init__(self):
             pass
-        def run(self,a,b):
+        def run(self,a,b,**kwargs):
             return b
     correction_func=DummyCorrection()
+
