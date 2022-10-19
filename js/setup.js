@@ -1,8 +1,11 @@
-function(token_val, width, height, size, model_choice){
+function(token_val, width, height, size, model_choice, model_path){
     let app=document.querySelector("gradio-app");
     app=app.shadowRoot??app;
     app.querySelector("#sdinfframe").style.height=80+Number(height)+"px";
+    app.querySelector("#setup_row").style.display="none";
+    app.querySelector("#model_path_input").style.display="none";
     let frame=app.querySelector("#sdinfframe").contentWindow.document;
+
     if(frame.querySelector("#setup").value=="0")
     {
         window.my_setup=setInterval(function(){
@@ -21,5 +24,5 @@ function(token_val, width, height, size, model_choice){
     {
         frame.querySelector("#draw").click();
     }
-    return [token_val, width, height, size, model_choice];
+    return [token_val, width, height, size, model_choice, model_path];
 }

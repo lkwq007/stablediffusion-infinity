@@ -61,13 +61,18 @@ class PhotometricCorrection:
         )
         self.proc=proc
 
-    def run(self, original_image, inpainted_image):
+    def run(self, original_image, inpainted_image, mode="mask_mode"):
+        if mode=="disabled":
+            return inpainted_image
         input_arr=np.array(original_image)
         output_arr=np.array(inpainted_image)
         mask=input_arr[:,:,-1]
         mask=255-mask
-        mask = skimage.measure.block_reduce(mask, (8, 8), np.max)
-        mask = mask.repeat(8, axis=0).repeat(8, axis=1)
+        if mode=="mask_mode":
+            mask = skimage.measure.block_reduce(mask, (8, 8), np.max)
+            mask = mask.repeat(8, axis=0).repeat(8, axis=1)
+        else:
+            mask[8:-9,8:-9]=255
         mask = mask[:,:,np.newaxis].repeat(3,axis=2)
         nmask=mask.copy()
         output_arr2=output_arr[:,:,0:3].copy()
@@ -91,7 +96,7 @@ class PhotometricCorrection:
         for i in range(0, args.n, args.p):
             if proc.root:
                 result, err = proc.step(args.p)  # type: ignore
-                print(f"PIE: Iter {i + args.p}, abs error {err}")
+                print(f"PIE: Iter {i + args.p}, abs_err {err}")
             else:
                 proc.step(args.p)
 
@@ -199,3 +204,5 @@ class PhotometricCorrection:
         )
         self.parser=parser
 
+# if __name__ =="__main__":
+#     process=PhotometricCorrection()

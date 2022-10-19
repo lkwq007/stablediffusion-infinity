@@ -134,7 +134,7 @@ var toolbar=new w2toolbar({
         { type: "button", id: "setting", tooltip: "Settings", icon: "fa-solid fa-sliders" },
         { type: "break" },
         check_button("enable_img2img","Enable Img2Img",false),
-        check_button("use_correction","Photometric Correction",false),
+        // check_button("use_correction","Photometric Correction",false),
         check_button("resize_check","Resize Small Input",true),
         check_button("enable_safety","Enable Safety Checker",true),
         {type: "break"},

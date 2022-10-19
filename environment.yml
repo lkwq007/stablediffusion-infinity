@@ -283,7 +283,7 @@ dependencies:
     - fpie==0.2.4
     - google-auth==2.12.0
     - google-auth-oauthlib==0.4.6
-    - gradio==3.4.0
+    - gradio==3.6
     - grpcio==1.49.1
     - h11==0.12.0
     - httpcore==0.15.0
