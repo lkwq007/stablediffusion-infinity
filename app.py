@@ -468,7 +468,6 @@ def run_outpaint(
     for image in images:
         if use_correction:
             image = correction_func.run(pil.resize(image.size), image)
-            image = Image.fromarray(image)
         resized_img = image.resize((width, height), resample=SAMPLING_MODE,)
         out = sel_buffer.copy()
         out[:, :, 0:3] = np.array(resized_img)

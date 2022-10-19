@@ -611,12 +611,12 @@ def convert_ldm_clip_checkpoint(checkpoint):
 
     return text_model
 
-
-if __name__ == "__main__":
+import os
+def convert_checkpoint(checkpoint_path):
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--checkpoint_path", default=None, type=str, required=True, help="Path to the checkpoint to convert."
+        "--checkpoint_path", default=checkpoint_path, type=str, help="Path to the checkpoint to convert."
     )
     # !wget https://raw.githubusercontent.com/CompVis/stable-diffusion/main/configs/stable-diffusion/v1-inference.yaml
     parser.add_argument(
@@ -633,13 +633,9 @@ if __name__ == "__main__":
     )
     parser.add_argument("--dump_path", default=None, type=str, required=True, help="Path to the output model.")
 
-    args = parser.parse_args()
-
+    args = parser.parse_args([])
     if args.original_config_file is None:
-        os.system(
-            "wget https://raw.githubusercontent.com/CompVis/stable-diffusion/main/configs/stable-diffusion/v1-inference.yaml"
-        )
-        args.original_config_file = "./v1-inference.yaml"
+        args.original_config_file = "./models/v1-inference.yaml"
 
     original_config = OmegaConf.load(args.original_config_file)
     checkpoint = torch.load(args.checkpoint_path)["state_dict"]
@@ -704,4 +700,4 @@ if __name__ == "__main__":
         tokenizer = BertTokenizerFast.from_pretrained("bert-base-uncased")
         pipe = LDMTextToImagePipeline(vqvae=vae, bert=text_model, tokenizer=tokenizer, unet=unet, scheduler=scheduler)
 
-    pipe.save_pretrained(args.dump_path)
+    return pipe

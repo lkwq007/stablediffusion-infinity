@@ -51,3 +51,5 @@ The submodule `glid_3_xl_stable` is based on https://github.com/Jack000/glid-3-x
 The submodule `PyPatchMatch` is based on https://github.com/vacancy/PyPatchMatch
 
 The code of `postprocess.py` and `process.py` is modified based on https://github.com/Trinkle23897/Fast-Poisson-Image-Editing
+
+The code of `convert_checkpoint.py` is modified based on https://github.com/huggingface/diffusers/blob/main/scripts/convert_original_stable_diffusion_to_diffusers.py
