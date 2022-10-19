@@ -21,5 +21,5 @@ function(token_val, height, model_choice){
     {
         frame.querySelector("#draw").click();
     }
-    return [token_val, width, height, size, model_choice];
+    return [token_val, height, model_choice];
 }
