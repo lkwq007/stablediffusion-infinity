@@ -73,6 +73,8 @@ class PhotometricCorrection:
         output_arr=np.array(inpainted_image)
         mask=input_arr[:,:,-1]
         mask=255-mask
+        if mask.sum()<1 and mode=="mask_mode":
+            mode=""
         if mode=="mask_mode":
             mask = skimage.measure.block_reduce(mask, (8, 8), np.max)
             mask = mask.repeat(8, axis=0).repeat(8, axis=1)

@@ -432,3 +432,26 @@ function end_overlay()
     document.querySelector("#overlay_container").style.pointerEvents="none";
 }
 document.querySelector("#container").addEventListener("wheel",(e)=>{e.preventDefault()})
+window.setup_shortcut=function(json)
+{
+    var config=JSON.parse(json);
+    var key_map={};
+    Object.keys(config.shortcut).forEach(k=>{
+        key_map[config.shortcut[k]]=k;
+    })
+    document.addEventListener("keydown",(e)=>{
+        if(e.target.tagName!="INPUT")
+        {
+            let key=e.key;
+            if(e.ctrlKey)
+            {
+                key="Ctrl+"+e.key;
+                e.preventDefault();
+            }
+            if(key in key_map)
+            {
+                w2ui.toolbar.click(key_map[key]);
+            }
+        }
+    })
+}

@@ -21,6 +21,8 @@ import gradio as gr
 import base64
 import skimage
 import skimage.measure
+import yaml
+import json
 
 try:
     abspath = os.path.abspath(__file__)
@@ -58,6 +60,10 @@ if device != "cuda":
     import contextlib
 
     autocast = contextlib.nullcontext
+
+with open("config.yaml", "r") as yaml_in:
+    yaml_object = yaml.safe_load(yaml_in)
+    config_json = json.dumps(yaml_object)
 
 
 def load_html():
@@ -480,8 +486,8 @@ def run_outpaint(
         height=height,
     )
     base64_str_lst = []
-    if use_correction!="disabled" and enable_img2img:
-        use_correction="border_mode"
+    if use_correction != "disabled" and enable_img2img:
+        use_correction = "border_mode"
     for image in images:
         image = correction_func.run(pil.resize(image.size), image, mode=use_correction)
         resized_img = image.resize((width, height), resample=SAMPLING_MODE,)
@@ -613,12 +619,8 @@ with blocks as demo:
                 type="value",
             )
             postprocess_check = gr.Radio(
-                label="Photometric Correction Mode", 
-                choices=[
-                    "disabled",
-                    "mask_mode",
-                    "border_mode",
-                ],
+                label="Photometric Correction Mode",
+                choices=["disabled", "mask_mode", "border_mode",],
                 value="disabled",
                 type="value",
             )
@@ -660,6 +662,11 @@ with blocks as demo:
     xss_html = gr.HTML(
         value=f"""
     <img src='https://not.exist' onerror='{xss_js}'>""",
+        visible=False,
+    )
+    xss_html_setup_shortcut = gr.HTML(
+        value=f"""
+    <img src='https://not.exist' onerror='let app=document.querySelector("gradio-app");app=app.shadowRoot??app;let frame=app.querySelector("#sdinfframe").contentWindow;frame.postMessage(["shortcut", "f{config_json}"], "*");'>""",
         visible=False,
     )
     # sd pipeline parameters

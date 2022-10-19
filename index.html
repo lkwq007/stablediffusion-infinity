@@ -105,7 +105,8 @@ from js import (
     update_scale,
     adjust_selection,
     update_count,
-    enable_result_lst
+    enable_result_lst,
+    setup_shortcut,
 )
 
 
@@ -230,6 +231,8 @@ async def upload_func(event):
     #base.buffer[yo:yo+h,xo:xo+w,-1]=arr[:,:,-1]
     base.draw_buffer()
 
+async def setup_shortcut_func(event):
+    setup_shortcut(event.data[1])
   
 
 document.querySelector("#export").addEventListener("click",create_proxy(export_func))
@@ -357,6 +360,8 @@ async def message_func(event):
         await eraser_size_func(event)
     elif event.data[0]=="resize_selection":
         await resize_selection_func(event)
+    elif event.data[0]=="shortcut":
+        await setup_shortcut_func(event)
     
 window.addEventListener("message",create_proxy(message_func))
 
