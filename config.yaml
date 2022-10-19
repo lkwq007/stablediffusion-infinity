@@ -1,0 +1,18 @@
+shortcut:
+  clear: Escape
+  load: Ctrl+o
+  save: Ctrl+s
+  export: Ctrl+e
+  upload: Ctrl+u
+  selection: 1
+  canvas: 2
+  eraser: 3
+  outpaint: d
+  accept: a
+  cancel: c
+  retry: r
+  prev: q
+  next: e
+  zoom_in: z
+  zoom_out: x
+  random_seed: s

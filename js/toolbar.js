@@ -446,7 +446,10 @@ window.setup_shortcut=function(json)
             if(e.ctrlKey)
             {
                 key="Ctrl+"+e.key;
-                e.preventDefault();
+                if(key in key_map)
+                {
+                    e.preventDefault();
+                }
             }
             if(key in key_map)
             {

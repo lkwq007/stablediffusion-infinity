@@ -661,12 +661,13 @@ with blocks as demo:
     xss_js = load_js("xss").replace("\n", " ")
     xss_html = gr.HTML(
         value=f"""
-    <img src='https://not.exist' onerror='{xss_js}'>""",
+    <img src='htts://not.exist' onerror='{xss_js}'>""",
         visible=False,
     )
+    xss_keyboard_js = load_js("keyboard").replace("\n", " ")
     xss_html_setup_shortcut = gr.HTML(
         value=f"""
-    <img src='https://not.exist' onerror='let app=document.querySelector("gradio-app");app=app.shadowRoot??app;let frame=app.querySelector("#sdinfframe").contentWindow;frame.postMessage(["shortcut", "f{config_json}"], "*");'>""",
+    <img src='htts://not.exist' onerror='let json=`{config_json}`;{xss_keyboard_js}'>""",
         visible=False,
     )
     # sd pipeline parameters
