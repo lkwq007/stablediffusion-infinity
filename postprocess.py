@@ -40,12 +40,13 @@ import scipy.signal
 
 
 class PhotometricCorrection:
-    def __init__(self):
+    def __init__(self,quite=False):
         self.get_parser("cli")
         args=self.parser.parse_args(["--method","grid","-g","src","-s","a","-t","a","-o","a"])
         args.mpi_sync_interval = getattr(args, "mpi_sync_interval", 0)
         self.backend=args.backend
         self.args=args
+        self.quite=quite
         proc: BaseProcessor
         proc = GridProcessor(
             args.gradient,
@@ -56,7 +57,8 @@ class PhotometricCorrection:
             args.grid_x,
             args.grid_y,
         )
-        print(
+        if not self.quite:
+            print(
             f"Successfully initialize PIE {args.method} solver "
             f"with {args.backend} backend"
         )
@@ -97,13 +99,15 @@ class PhotometricCorrection:
         for i in range(0, args.n, args.p):
             if proc.root:
                 result, err = proc.step(args.p)  # type: ignore
-                print(f"PIE: Iter {i + args.p}, abs_err {err}")
+                if not self.quite:
+                    print(f"PIE: Iter {i + args.p}, abs_err {err}")
             else:
                 proc.step(args.p)
 
         if proc.root:
             dt = time.time() - t
-            print(f"Time elapsed: {dt:.4f}s")
+            if not self.quite:
+                print(f"Time elapsed: {dt:.4f}s")
             # make sure consistent with dummy process
             return Image.fromarray(result)
 
