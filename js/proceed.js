@@ -18,7 +18,7 @@ function(sel_buffer_str,
     let app=document.querySelector("gradio-app");
     app=app.shadowRoot??app;
     sel_buffer=app.querySelector("#input textarea").value;
-    [resize_check,enable_safety,use_correction,enable_img2img,use_seed,seed_val]=window.config_obj;
+    ({resize_check,enable_safety,use_correction,enable_img2img,use_seed,seed_val}=window.config_obj);
     return [
         sel_buffer,
         prompt_text,

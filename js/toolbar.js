@@ -137,7 +137,22 @@ var toolbar=new w2toolbar({
         check_button("use_correction","Photometric Correction",false),
         check_button("resize_check","Resize Small Input",true),
         check_button("enable_safety","Enable Safety Checker",true),
-        check_button("use_seed","Use Seed",false),
+        {type: "break"},
+        check_button("use_seed","Use Seed:",false),
+        { type: "html", id: "seed_val",
+            async onRefresh(event) {
+                await event.complete
+                let fragment = query.html(`
+                    <input type="number" style="margin: 0px 3px; padding: 4px; width:100px;" value="${this.config_obj.seed_val ?? "0"}">`)
+                fragment.filter("input").on("change", event => {
+                    this.config_obj.seed_val = event.target.value;
+                    parent.config_obj=this.config_obj;
+                    this.refresh();
+                })
+                query(this.box).find("#tb_toolbar_item_seed_val").append(fragment)
+            }
+        },
+        { type: "button", id: "random_seed", tooltip: "Set a random seed", icon: "fa-solid fa-dice" },
     ],
     onClick(event) {
         switch(event.target){
@@ -268,6 +283,11 @@ var toolbar=new w2toolbar({
                 w2confirm("Reset canvas?").yes(() => {
                     window.postMessage(["click", event.target],"*");
                 }).no(() => {})
+                break;
+            case "random_seed":
+                this.config_obj.seed_val=Math.floor(Math.random() * 3000000000);
+                parent.config_obj=this.config_obj;
+                this.refresh();
                 break;
             case "enable_img2img":
             case "use_correction":
