@@ -1,8 +1,15 @@
 
-let app=document.querySelector("gradio-app");
-app=app.shadowRoot??app;
-let frame=app.querySelector("#sdinfframe").contentWindow;
-frame.setup_shortcut(json);
+window.my_setup_keyboard=setInterval(function(){
+    let app=document.querySelector("gradio-app");
+    app=app.shadowRoot??app;
+    let frame=app.querySelector("#sdinfframe").contentWindow;
+    console.log("Check iframe...");
+    if(frame.setup_shortcut)
+    {
+        frame.setup_shortcut(json);
+        clearInterval(window.my_setup_keyboard);
+    }
+}, 1000);
 var config=JSON.parse(json);
 var key_map={};
 Object.keys(config.shortcut).forEach(k=>{

@@ -407,11 +407,11 @@ parser.add_argument(
     "--local_model", type=str, help="use a model stored on your PC", default=""
 )
 
-# if __name__ == "__main__":
-#     args = parser.parse_args()
-# else:
-#     args = parser.parse_args(["--debug"])
-args = parser.parse_args(["--debug"])
+if __name__ == "__main__":
+    args = parser.parse_args()
+else:
+    args = parser.parse_args(["--debug"])
+# args = parser.parse_args(["--debug"])
 if args.auth is not None:
     args.auth = tuple(args.auth)
 
@@ -529,6 +529,9 @@ function (x)
 
 proceed_button_js = load_js("proceed")
 setup_button_js = load_js("setup")
+
+if RUN_IN_SPACE:
+    get_model(token=os.environ.get("hftoken",""))
 
 blocks = gr.Blocks(
     title="StableDiffusion-Infinity",
