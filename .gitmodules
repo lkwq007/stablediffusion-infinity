@@ -4,3 +4,6 @@
 [submodule "PyPatchMatch"]
 	path = PyPatchMatch
 	url = https://github.com/lkwq007/PyPatchMatch.git
+[submodule "sd_grpcserver"]
+	path = sd_grpcserver
+	url = https://github.com/lkwq007/sd_grpcserver.git

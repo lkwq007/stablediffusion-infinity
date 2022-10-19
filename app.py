@@ -36,6 +36,11 @@ from utils import *
 USE_NEW_DIFFUSERS = diffusers.__version__ >= "0.4.0"
 RUN_IN_SPACE = "RUN_IN_HG_SPACE" in os.environ
 
+try:
+    from sd_grpcserver.pipeline.unified_pipeline import UnifiedPipeline
+except:
+    UnifiedPipeline = StableDiffusionInpaintPipeline
+
 sys.path.append("./glid_3_xl_stable")
 
 USE_GLID = True
@@ -295,6 +300,15 @@ class StableDiffusion:
         self.text2img = text2img
         self.inpaint = inpaint
         self.img2img = img2img
+        self.unified = UnifiedPipeline(
+            vae=text2img.vae,
+            text_encoder=text2img.text_encoder,
+            tokenizer=text2img.tokenizer,
+            unet=text2img.unet,
+            scheduler=text2img.scheduler,
+            safety_checker=text2img.safety_checker,
+            feature_extractor=text2img.feature_extractor,
+        ).to(device)
 
     def run(
         self,
@@ -315,9 +329,14 @@ class StableDiffusion:
         scheduler_eta=0.0,
         **kwargs,
     ):
-        text2img, inpaint, img2img = self.text2img, self.inpaint, self.img2img
+        text2img, inpaint, img2img, unified = (
+            self.text2img,
+            self.inpaint,
+            self.img2img,
+            self.unified,
+        )
         selected_scheduler = scheduler_dict.get(scheduler, scheduler_dict["PLMS"])
-        for item in [text2img, inpaint, img2img]:
+        for item in [text2img, inpaint, img2img, unified]:
             item.scheduler = selected_scheduler
             if enable_safety:
                 item.safety_checker = self.safety_checker
@@ -355,21 +374,29 @@ class StableDiffusion:
                     **extra_kwargs,
                 )["sample"]
         elif mask.sum() > 0:
-            img, mask = functbl[fill_mode](img, mask)
+            if fill_mode == "g_diffuser":
+                mask = 255 - mask
+                img, mask, out_mask = functbl[fill_mode](img, mask)
+                extra_kwargs["strength"] = 1.0
+                extra_kwargs["out_mask"] = Image.fromarray(out_mask)
+                inpaint_func = unified
+            else:
+                img, mask = functbl[fill_mode](img, mask)
+                mask = 255 - mask
+                mask = skimage.measure.block_reduce(mask, (8, 8), np.max)
+                mask = mask.repeat(8, axis=0).repeat(8, axis=1)
+                extra_kwargs["strength"] = strength
+                inpaint_func = inpaint
             init_image = Image.fromarray(img)
-            mask = 255 - mask
-            mask = skimage.measure.block_reduce(mask, (8, 8), np.max)
-            mask = mask.repeat(8, axis=0).repeat(8, axis=1)
             mask_image = Image.fromarray(mask)
             # mask_image=mask_image.filter(ImageFilter.GaussianBlur(radius = 8))
             with autocast("cuda"):
-                images = inpaint(
+                images = inpaint_func(
                     prompt=prompt,
                     init_image=init_image.resize(
                         (process_width, process_height), resample=SAMPLING_MODE
                     ),
                     mask_image=mask_image.resize((process_width, process_height)),
-                    strength=strength,
                     **extra_kwargs,
                 )["sample"]
         else:
@@ -531,7 +558,7 @@ proceed_button_js = load_js("proceed")
 setup_button_js = load_js("setup")
 
 if RUN_IN_SPACE:
-    get_model(token=os.environ.get("hftoken",""))
+    get_model(token=os.environ.get("hftoken", ""))
 
 blocks = gr.Blocks(
     title="StableDiffusion-Infinity",
@@ -612,10 +639,9 @@ with blocks as demo:
                 label="Init Mode",
                 choices=[
                     "patchmatch",
-                    "edge_pad",
+                    "g_diffuser" "edge_pad",
                     "cv2_ns",
                     "cv2_telea",
-                    "gaussian",
                     "perlin",
                 ],
                 value="patchmatch",

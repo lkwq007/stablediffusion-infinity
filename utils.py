@@ -142,12 +142,59 @@ def mean_fill(img, mask):
     img[mask < 1] = avg
     return img, mask
 
+"""
+https://github.com/hafriedlander/stable-diffusion-grpcserver/blob/main/sdgrpcserver/services/generate.py
+https://github.com/parlance-zz/g-diffuser-bot/tree/g-diffuser-bot-beta2
+"""
+if True:
+    from sd_grpcserver.sdgrpcserver import images
+    import torch
+    from math import sqrt
+    def handleImageAdjustment(array, adjustments):
+        tensor = images.fromPIL(Image.fromarray(array))
+        for adjustment in adjustments:
+            which = adjustment[0]
+
+            if which == "blur":
+                sigma = adjustment[1]
+                direction = adjustment[2]
+
+                if direction == "DOWN" or direction == "UP":
+                    orig = tensor
+                    repeatCount=256
+                    sigma /= sqrt(repeatCount)
+
+                    for _ in range(repeatCount):
+                        tensor = images.gaussianblur(tensor, sigma)
+                        if direction == "DOWN":
+                            tensor = torch.minimum(tensor, orig)
+                        else:
+                            tensor = torch.maximum(tensor, orig)
+                else:
+                    tensor = images.gaussianblur(tensor, adjustment.blur.sigma)
+            elif which == "invert":
+                tensor = images.invert(tensor)
+            elif which == "levels":
+                tensor = images.levels(tensor, adjustment[1], adjustment[2], adjustment[3], adjustment[4])
+            elif which == "channels":
+                tensor = images.channelmap(tensor, [adjustment.channels.r,  adjustment.channels.g,  adjustment.channels.b,  adjustment.channels.a])
+            elif which == "rescale":
+                self.unimp("Rescale")
+            elif which == "crop":
+                tensor = images.crop(tensor, adjustment.crop.top, adjustment.crop.left, adjustment.crop.height, adjustment.crop.width)
+        return np.array(images.toPIL(tensor))
+
+def g_diffuser(img,mask):
+    adjustments=[["blur",32,"UP"],["level",0,0.05,0,1]]
+    mask=handleImageAdjustment(mask,adjustments)
+    out_mask=handleImageAdjustment(mask,adjustments)
+    return img, mask, out_mask
 
 functbl = {
-    "gaussian": gaussian_noise,
+    "g_diffuser": g_diffuser,
     "perlin": perlin_noise,
     "edge_pad": edge_pad,
-    "patchmatch": patch_match_func if patch_match_compiled else edge_pad,
+    "patchmatch": patch_match_func if patch_match_compiled else g_diffuser,
     "cv2_ns": cv2_ns,
     "cv2_telea": cv2_telea,
     "mean_fill": mean_fill,
