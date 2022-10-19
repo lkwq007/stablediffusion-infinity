@@ -109,15 +109,7 @@ except Exception as e:
 PAINT_SELECTION = "✥"
 IMAGE_SELECTION = "🖼️"
 BRUSH_SELECTION = "🖌️"
-blocks = gr.Blocks(
-    title="StableDiffusion-Infinity",
-    css="""
-.tabs {
-margin-top: 0rem;
-margin-bottom: 0rem;
-}
-""",
-)
+
 model = {}
 
 
@@ -508,13 +500,24 @@ function (x)
 proceed_button_js = load_js("proceed")
 setup_button_js = load_js("setup")
 
+blocks = gr.Blocks(
+    title="StableDiffusion-Infinity",
+    css="""
+.tabs {
+margin-top: 0rem;
+margin-bottom: 0rem;
+}
+#markdown {
+min-height: 0rem;
+}
+""",
+)
 with blocks as demo:
     # title
     title = gr.Markdown(
         """
     **stablediffusion-infinity**: Outpainting with Stable Diffusion on an infinite canvas: [https://github.com/lkwq007/stablediffusion-infinity](https://github.com/lkwq007/stablediffusion-infinity)
-    """
-    )
+    """, elem_id="markdown")
     # frame
     frame = gr.HTML(test(2), visible=RUN_IN_SPACE)
     # setup

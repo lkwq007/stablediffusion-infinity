@@ -279,7 +279,7 @@ async def zoom_in_func(event):
         else:
             base.update_scale(scale)
         scale=base.scale
-        update_scale(round(100/scale))
+        update_scale(f"{base.width}x{base.height} ({round(100/scale)}%)")
 
 async def zoom_out_func(event):
     base=base_lst[0]
@@ -292,7 +292,7 @@ async def zoom_out_func(event):
         else:
             base.update_scale(scale)
         scale=base.scale
-        update_scale(round(100/scale))
+        update_scale(f"{base.width}x{base.height} ({round(100/scale)}%)")
 
 async def sync_func(event):
     base=base_lst[0]

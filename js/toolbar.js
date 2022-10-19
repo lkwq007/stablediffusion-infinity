@@ -276,7 +276,7 @@ window.update_eraser=function(val,max_val){
   w2ui.toolbar.refresh();
 }
 window.update_scale=function(val){
-  w2ui.toolbar.scale_value=`${val}%`;
+  w2ui.toolbar.scale_value=`${val}`;
   w2ui.toolbar.refresh();
 }
 window.enable_result_lst=function(){
@@ -314,11 +314,17 @@ window.setup_overlay=function(width,height)
     if(window.overlay)
     {
         window.overlay.setDimensions({width:width,height:height});
+        let app=parent.document.querySelector("gradio-app");
+        app=app.shadowRoot??app;
+        app.querySelector("#sdinfframe").style.height=39+Number(height)+"px";
     }
     else
     {
         canvas=new fabric.Canvas("overlay_canvas");
         canvas.setDimensions({width:width,height:height});
+        let app=parent.document.querySelector("gradio-app");
+        app=app.shadowRoot??app;
+        app.querySelector("#sdinfframe").style.height=39+Number(height)+"px";
         canvas.freeDrawingBrush = new fabric.EraserBrush(canvas);
         canvas.on("object:scaling", onObjectScaled);
         canvas.on("object:moving", onObjectMoved);
