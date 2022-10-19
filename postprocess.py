@@ -226,7 +226,7 @@ if __name__ =="__main__":
         base64_bytes = base64.b64encode(out_buffer.read())
         base64_str = base64_bytes.decode("ascii")
         return base64_str
-    correction_func=PhotometricCorrection()
+    correction_func=PhotometricCorrection(quite=True)
     while True:
         buffer = sys.stdin.readline()
         if not buffer:
