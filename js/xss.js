@@ -20,4 +20,12 @@ var setup_outpaint=function(){
         });
     }
 }; 
+window.config_obj={
+    resize_check: true,
+    enable_safety: true,
+    use_correction: false,
+    enable_img2img: false,
+    use_seed: false,
+    seed_val: 0,
+};
 setup_outpaint();

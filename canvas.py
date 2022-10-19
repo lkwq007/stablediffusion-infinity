@@ -293,7 +293,6 @@ class InfCanvas:
             self.mouse_pos[0] = x
             self.mouse_pos[1] = y
             console.log(to_js(self.mouse_pos))
-            event.preventDefault()
             if event.deltaY>10:
                 window.postMessage(to_js(["click","zoom_out", self.mouse_pos[0], self.mouse_pos[1]]),"*")
             elif event.deltaY<-10:

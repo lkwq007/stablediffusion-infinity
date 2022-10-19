@@ -43,6 +43,13 @@ var upload_button_lst=['clear', 'load', 'save', "upload", 'export', 'outpaint', 
 var resize_button_lst=['clear', 'load', 'save', "upload", 'export', "selection", "canvas", "eraser", 'outpaint', 'resize_selection',"zoom_in", "zoom_out", 'help'];
 var outpaint_button_lst=['clear', 'load', 'save', "canvas", "eraser", "upload", 'export', 'resize_selection', "zoom_in", "zoom_out",'help'];
 var outpaint_result_lst=["accept", "cancel", "retry", "prev", "current", "next"];
+var outpaint_result_func_lst=["accept", "retry", "prev", "current", "next"];
+
+function check_button(id,text="",checked=true,tooltip="")
+{
+    return { type: "check",  id: id, text: text, icon: checked?"fa-solid fa-square-check":"fa-regular fa-square", checked: checked, tooltip: tooltip };
+}
+
 var toolbar=new w2toolbar({
     box: "#toolbar",
     name: "toolbar",
@@ -63,7 +70,7 @@ var toolbar=new w2toolbar({
         { type: "button", id: "outpaint", text: "Outpaint", icon: "fa-solid fa-brush" },
         { type: "break" },
         { type: "button", id: "accept", text: "Accept", icon: "fa-solid fa-check", hidden: true, disable:true,},
-        { type: "button", id: "cancel", text: "Cancel", icon: "fa-solid fa-ban", hidden: true, disable:true,},
+        { type: "button", id: "cancel", text: "Cancel", icon: "fa-solid fa-ban", hidden: true},
         { type: "button", id: "retry", text: "Retry", icon: "fa-solid fa-rotate", hidden: true, disable:true,},
         { type: "button", id: "prev", tooltip: "Prev Result", icon: "fa-solid fa-caret-left", hidden: true, disable:true,},
         { type: "html", id: "current", hidden: true, disable:true,
@@ -122,7 +129,15 @@ var toolbar=new w2toolbar({
         { type: "button", id: "zoom_in", tooltip: "Zoom In", icon: "fa-solid fa-magnifying-glass-plus" },
         { type: "button", id: "zoom_out", tooltip: "Zoom Out", icon: "fa-solid fa-magnifying-glass-minus" },
         { type: "break" },
-        { type: "button", id: "help", tooltip: "Help", icon: "fa-solid fa-circle-info" }
+        { type: "button", id: "help", tooltip: "Help", icon: "fa-solid fa-circle-info" },
+        { type: "new-line"},
+        { type: "button", id: "setting", tooltip: "Settings", icon: "fa-solid fa-sliders" },
+        { type: "break" },
+        check_button("enable_img2img","Enable Img2Img",false),
+        check_button("use_correction","Photometric Correction",false),
+        check_button("resize_check","Resize Small Input",true),
+        check_button("enable_safety","Enable Safety Checker",true),
+        check_button("use_seed","Use Seed",false),
     ],
     onClick(event) {
         switch(event.target){
@@ -202,8 +217,7 @@ var toolbar=new w2toolbar({
                 }
                 document.querySelector("#container").style.pointerEvents="none";
             case "retry":
-                this.disable(...outpaint_result_lst);
-                this.enable("cancel");
+                this.disable(...outpaint_result_func_lst);
                 window.postMessage(["transfer",""],"*")
                 break;
             case "accept":
@@ -255,6 +269,17 @@ var toolbar=new w2toolbar({
                     window.postMessage(["click", event.target],"*");
                 }).no(() => {})
                 break;
+            case "enable_img2img":
+            case "use_correction":
+            case "resize_check":
+            case "enable_safety":
+            case "use_seed":
+                let target=this.get(event.target);
+                target.icon=target.checked?"fa-regular fa-square":"fa-solid fa-square-check";
+                this.config_obj[event.target]=!target.checked;
+                parent.config_obj=this.config_obj;
+                this.refresh();
+                break;
             default:
                 // clear, save, export, outpaint, retry
                 // break, save, export, accept, retry, outpaint
@@ -264,6 +289,14 @@ var toolbar=new w2toolbar({
     }
 })
 window.w2ui=w2ui;
+w2ui.toolbar.config_obj={
+    resize_check: true,
+    enable_safety: true,
+    use_correction: false,
+    enable_img2img: false,
+    use_seed: false,
+    seed_val: 0,
+};
 w2ui.toolbar.outpaint_tip=true;
 window.update_count=function(cur,total){
   w2ui.toolbar.sel_value=`${cur}/${total}`;
@@ -280,7 +313,7 @@ window.update_scale=function(val){
   w2ui.toolbar.refresh();
 }
 window.enable_result_lst=function(){
-  w2ui.toolbar.enable(...outpaint_result_lst);
+  w2ui.toolbar.enable(...outpaint_result_func_lst);
 }
 function onObjectScaled(e)
 {
@@ -317,6 +350,8 @@ window.setup_overlay=function(width,height)
         let app=parent.document.querySelector("gradio-app");
         app=app.shadowRoot??app;
         app.querySelector("#sdinfframe").style.height=39+Number(height)+"px";
+        document.querySelector("#container").style.height= height+"px";
+        document.querySelector("#container").style.width = width+"px";
     }
     else
     {
@@ -376,3 +411,4 @@ function end_overlay()
     document.querySelector("#overlay_container").style.opacity = 1.0;
     document.querySelector("#overlay_container").style.pointerEvents="none";
 }
+document.querySelector("#container").addEventListener("wheel",(e)=>{e.preventDefault()})

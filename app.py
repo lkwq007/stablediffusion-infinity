@@ -639,7 +639,7 @@ with blocks as demo:
     model_output_state = gr.State(value=0)
     upload_output_state = gr.State(value=0)
     if not RUN_IN_SPACE:
-        def setup_func(token_val, height, model_choice):
+        def setup_func(token_val, width, height, size, model_choice):
             try:
                 get_model(token_val, model_choice)
             except Exception as e:
@@ -658,7 +658,7 @@ with blocks as demo:
 
         setup_button.click(
             fn=setup_func,
-            inputs=[token, canvas_height, model_selection],
+            inputs=[token, canvas_width, canvas_height, selection_size, model_selection],
             outputs=[
                 token,
                 canvas_width,
