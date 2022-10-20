@@ -38,6 +38,7 @@ RUN_IN_SPACE = "RUN_IN_HG_SPACE" in os.environ
 
 try:
     from sd_grpcserver.pipeline.unified_pipeline import UnifiedPipeline
+
     print("Using UnifiedPipeline")
 except:
     UnifiedPipeline = StableDiffusionInpaintPipeline
@@ -204,13 +205,10 @@ def load_learned_embed_in_clip(
 
 scheduler_dict = {"PLMS": None, "DDIM": None, "K-LMS": None}
 
+
 class StableDiffusionInpaint:
     def __init__(
-        self,
-        token: str = "",
-        model_name: str = "",
-        model_path: str = None,
-        **kwargs,
+        self, token: str = "", model_name: str = "", model_path: str = None, **kwargs,
     ):
         self.token = token
         print(f"Loading {model_name}")
@@ -235,7 +233,7 @@ class StableDiffusionInpaint:
                     )
         inpaint.to(device)
         # if device == "mps":
-            # _ = text2img("", num_inference_steps=1)
+        # _ = text2img("", num_inference_steps=1)
         scheduler_dict["PLMS"] = inpaint.scheduler
         scheduler_dict["DDIM"] = prepare_scheduler(
             DDIMScheduler(
@@ -251,7 +249,7 @@ class StableDiffusionInpaint:
                 beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear"
             )
         )
-        self.safety_checker = inpaintn.safety_checker
+        self.safety_checker = inpaint.safety_checker
         save_token(token)
         try:
             total_memory = torch.cuda.get_device_properties(0).total_memory // (
@@ -313,18 +311,17 @@ class StableDiffusionInpaint:
         if True:
             if fill_mode == "g_diffuser":
                 mask = 255 - mask
-                mask = mask[:,:,np.newaxis].repeat(3,axis=2)
+                mask = mask[:, :, np.newaxis].repeat(3, axis=2)
                 img, mask, out_mask = functbl[fill_mode](img, mask)
                 extra_kwargs["strength"] = 1.0
                 extra_kwargs["out_mask"] = Image.fromarray(out_mask)
-                inpaint_func = unified
             else:
                 img, mask = functbl[fill_mode](img, mask)
                 mask = 255 - mask
                 mask = skimage.measure.block_reduce(mask, (8, 8), np.max)
                 mask = mask.repeat(8, axis=0).repeat(8, axis=1)
                 extra_kwargs["strength"] = strength
-                inpaint_func = inpaint
+            inpaint_func = inpaint
             init_image = Image.fromarray(img)
             mask_image = Image.fromarray(mask)
             # mask_image=mask_image.filter(ImageFilter.GaussianBlur(radius = 8))
@@ -338,6 +335,8 @@ class StableDiffusionInpaint:
                     **extra_kwargs,
                 )["images"]
         return images
+
+
 class StableDiffusion:
     def __init__(
         self,
@@ -510,7 +509,7 @@ class StableDiffusion:
         elif mask.sum() > 0:
             if fill_mode == "g_diffuser":
                 mask = 255 - mask
-                mask = mask[:,:,np.newaxis].repeat(3,axis=2)
+                mask = mask[:, :, np.newaxis].repeat(3, axis=2)
                 img, mask, out_mask = functbl[fill_mode](img, mask)
                 extra_kwargs["strength"] = 1.0
                 extra_kwargs["out_mask"] = Image.fromarray(out_mask)
@@ -594,7 +593,9 @@ def get_model(token="", model_choice="", model_path=""):
         elif model_choice == "stablediffusion":
             tmp = StableDiffusion(token)
         elif model_choice == "stablediffusion-inpainting":
-            tmp = StableDiffusionInpaint(token=token, model_name="runwayml/stable-diffusion-inpainting")
+            tmp = StableDiffusionInpaint(
+                token=token, model_name="runwayml/stable-diffusion-inpainting"
+            )
         else:
             config_lst = ["--edit", "a.png", "--mask", "mask.png"]
             if device == "cpu":
@@ -720,7 +721,11 @@ with blocks as demo:
     frame = gr.HTML(test(2), visible=RUN_IN_SPACE)
     # setup
     if not RUN_IN_SPACE:
-        model_choices_lst = ["stablediffusion-inpainting", "stablediffusion", "glid-3-xl-stable"]
+        model_choices_lst = [
+            "stablediffusion-inpainting",
+            "stablediffusion",
+            "glid-3-xl-stable",
+        ]
         if args.local_model:
             model_path_input_val = args.local_model
             # model_choices_lst.insert(0, "local_model")
@@ -779,7 +784,6 @@ with blocks as demo:
                     "cv2_ns",
                     "cv2_telea",
                     "perlin",
-                    "disabled"
                 ],
                 value="patchmatch",
                 type="value",
@@ -827,7 +831,7 @@ with blocks as demo:
     xss_js = load_js("xss").replace("\n", " ")
     xss_html = gr.HTML(
         value=f"""
-    <img src='htts://not.exist' onerror='{xss_js}'>""",
+    <img src='hts://not.exist' onerror='{xss_js}'>""",
         visible=False,
     )
     xss_keyboard_js = load_js("keyboard").replace("\n", " ")
@@ -850,7 +854,7 @@ with blocks as demo:
     upload_output = gr.Textbox(visible=DEBUG_MODE, elem_id="upload", label="0")
     model_output_state = gr.State(value=0)
     upload_output_state = gr.State(value=0)
-    cancel_button = gr.Button("Cancel",elem_id="cancel",visible=False)
+    cancel_button = gr.Button("Cancel", elem_id="cancel", visible=False)
     if not RUN_IN_SPACE:
 
         def setup_func(token_val, width, height, size, model_choice, model_path):
@@ -895,7 +899,7 @@ with blocks as demo:
             _js=setup_button_js,
         )
 
-    proceed_event=proceed_button.click(
+    proceed_event = proceed_button.click(
         fn=run_outpaint,
         inputs=[
             model_input,
@@ -919,7 +923,8 @@ with blocks as demo:
         outputs=[model_output, sd_prompt, model_output_state],
         _js=proceed_button_js,
     )
-    # cancel_button.click(fn=None, inputs=None, outputs=None, cancels=[proceed_event])
+    # cancel button can also remove error overlay
+    cancel_button.click(fn=None, inputs=None, outputs=None, cancels=[proceed_event])
 
 
 launch_extra_kwargs = {
@@ -942,7 +947,7 @@ if RUN_IN_SPACE:
     demo.launch()
 elif args.debug:
     launch_kwargs["server_name"] = "0.0.0.0"
-    demo.launch(**launch_kwargs)
+    demo.queue().launch(**launch_kwargs)
 else:
-    demo.launch(**launch_kwargs)
+    demo.queue().launch(**launch_kwargs)
 

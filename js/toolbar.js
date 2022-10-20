@@ -242,6 +242,9 @@ var toolbar=new w2toolbar({
                 this.enable(...outpaint_button_lst);
                 document.querySelector("#container").style.pointerEvents="auto";
                 window.postMessage(["click", event.target],"*");
+                let app=parent.document.querySelector("gradio-app");
+                app=app.shadowRoot??app;
+                app.querySelector("#cancel").click();
                 break;
             case "eraser":
             case "selection":
