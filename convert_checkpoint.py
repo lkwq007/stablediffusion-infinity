@@ -612,7 +612,7 @@ def convert_ldm_clip_checkpoint(checkpoint):
     return text_model
 
 import os
-def convert_checkpoint(checkpoint_path):
+def convert_checkpoint(checkpoint_path, inpainting=False):
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -635,7 +635,10 @@ def convert_checkpoint(checkpoint_path):
 
     args = parser.parse_args([])
     if args.original_config_file is None:
-        args.original_config_file = "./models/v1-inference.yaml"
+        if inpainting:
+            args.original_config_file = "./models/v1-inpainting-inference.yaml"
+        else:
+            args.original_config_file = "./models/v1-inference.yaml"
 
     original_config = OmegaConf.load(args.original_config_file)
     checkpoint = torch.load(args.checkpoint_path)["state_dict"]
