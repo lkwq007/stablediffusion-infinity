@@ -32,6 +32,7 @@ Update: the project add photometric correction to suppress seams, to use this fe
 - Setup for Linux: [setup_guide](./docs/setup_guide.md#linux)
 - Setup for MacOS: [setup_guide](./docs/setup_guide.md#macos)
 - Running with Docker on Windows or Linux with NVIDIA GPU: [run_with_docker](./docs/run_with_docker.md)
+- Usages: [usage](./docs/usage.md)
 
 ### FAQs
 
@@ -53,3 +54,5 @@ The submodule `PyPatchMatch` is based on https://github.com/vacancy/PyPatchMatch
 The code of `postprocess.py` and `process.py` is modified based on https://github.com/Trinkle23897/Fast-Poisson-Image-Editing
 
 The code of `convert_checkpoint.py` is modified based on https://github.com/huggingface/diffusers/blob/main/scripts/convert_original_stable_diffusion_to_diffusers.py
+
+The submodule `sd_grpcserver` and `handleImageAdjustment()` in `utils.py` are based on https://github.com/hafriedlander/stable-diffusion-grpcserver and https://github.com/parlance-zz/g-diffuser-bot

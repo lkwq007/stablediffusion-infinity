@@ -12,6 +12,7 @@ from diffusers import (
     StableDiffusionPipeline,
     StableDiffusionInpaintPipeline,
     StableDiffusionImg2ImgPipeline,
+    StableDiffusionInpaintPipelineLegacy,
     DDIMScheduler,
     LMSDiscreteScheduler,
 )
@@ -23,6 +24,7 @@ import skimage
 import skimage.measure
 import yaml
 import json
+from enum import Enum
 
 try:
     abspath = os.path.abspath(__file__)
@@ -33,23 +35,30 @@ except:
 
 from utils import *
 
-USE_NEW_DIFFUSERS = diffusers.__version__ >= "0.4.0"
+assert diffusers.__version__ >= "0.6.0", "Please upgrade diffusers to 0.6.0"
+
+USE_NEW_DIFFUSERS = True
 RUN_IN_SPACE = "RUN_IN_HG_SPACE" in os.environ
+
+
+class ModelChoice(Enum):
+    INPAINTING = "stablediffusion-inpainting"
+    INPAINTING_IMG2IMG = "stablediffusion-inpainting+img2img-v1.4"
+    OLD_MODEL = "stablediffusion-v1.4"
+
 
 try:
     from sd_grpcserver.pipeline.unified_pipeline import UnifiedPipeline
-
-    print("Using UnifiedPipeline")
 except:
     UnifiedPipeline = StableDiffusionInpaintPipeline
 
-sys.path.append("./glid_3_xl_stable")
+# sys.path.append("./glid_3_xl_stable")
 
-USE_GLID = True
-try:
-    from glid3xlmodel import GlidModel
-except:
-    USE_GLID = False
+USE_GLID = False
+# try:
+#     from glid3xlmodel import GlidModel
+# except:
+#     USE_GLID = False
 
 try:
     cuda_available = torch.cuda.is_available()
@@ -120,10 +129,6 @@ except Exception as e:
                     size = (new_width, size[1])
         return image.resize(size, resample=method)
 
-
-PAINT_SELECTION = "✥"
-IMAGE_SELECTION = "🖼️"
-BRUSH_SELECTION = "🖌️"
 
 model = {}
 
@@ -208,22 +213,48 @@ scheduler_dict = {"PLMS": None, "DDIM": None, "K-LMS": None}
 
 class StableDiffusionInpaint:
     def __init__(
-        self, token: str = "", model_name: str = "", model_path: str = None, **kwargs,
+        self, token: str = "", model_name: str = "", model_path: str = "", **kwargs,
     ):
         self.token = token
-        print(f"Loading {model_name}")
-        if device == "cuda":
-            inpaint = StableDiffusionInpaintPipeline.from_pretrained(
-                model_name,
-                revision="fp16",
-                torch_dtype=torch.float16,
-                use_auth_token=token,
+        original_checkpoint = False
+        if model_path and os.path.exists(model_path):
+            if model_path.endswith(".ckpt"):
+                original_checkpoint = True
+            elif model_path.endswith(".json"):
+                model_name = os.path.dirname(model_path)
+            else:
+                model_name = model_path
+        if original_checkpoint:
+            print(f"Converting & Loading {model_path}")
+            from convert_checkpoint import convert_checkpoint
+
+            pipe = convert_checkpoint(model_path, inpainting=True)
+            if device == "cuda":
+                pipe.to(torch.float16)
+            inpaint = StableDiffusionInpaintPipeline(
+                vae=pipe.vae,
+                text_encoder=pipe.text_encoder,
+                tokenizer=pipe.tokenizer,
+                unet=pipe.unet,
+                scheduler=pipe.scheduler,
+                safety_checker=pipe.safety_checker,
+                feature_extractor=pipe.feature_extractor,
             )
         else:
-            inpaint = StableDiffusionInpaintPipeline.from_pretrained(
-                model_name, use_auth_token=token,
-            )
-        if False and os.path.exists("./embeddings"):
+            print(f"Loading {model_name}")
+            if device == "cuda":
+                inpaint = StableDiffusionInpaintPipeline.from_pretrained(
+                    model_name,
+                    revision="fp16",
+                    torch_dtype=torch.float16,
+                    use_auth_token=token,
+                )
+            else:
+                inpaint = StableDiffusionInpaintPipeline.from_pretrained(
+                    model_name, use_auth_token=token,
+                )
+        if os.path.exists("./embeddings"):
+            print("Note that StableDiffusionInpaintPipeline + embeddings is untested")
             for item in os.listdir("./embeddings"):
                 if item.endswith(".bin"):
                     load_learned_embed_in_clip(
@@ -309,18 +340,11 @@ class StableDiffusionInpaint:
             generator = torch.Generator(inpaint.device).manual_seed(seed_val)
             extra_kwargs["generator"] = generator
         if True:
-            if fill_mode == "g_diffuser":
-                mask = 255 - mask
-                mask = mask[:, :, np.newaxis].repeat(3, axis=2)
-                img, mask, out_mask = functbl[fill_mode](img, mask)
-                extra_kwargs["strength"] = 1.0
-                extra_kwargs["out_mask"] = Image.fromarray(out_mask)
-            else:
-                img, mask = functbl[fill_mode](img, mask)
-                mask = 255 - mask
-                mask = skimage.measure.block_reduce(mask, (8, 8), np.max)
-                mask = mask.repeat(8, axis=0).repeat(8, axis=1)
-                extra_kwargs["strength"] = strength
+            img, mask = functbl[fill_mode](img, mask)
+            mask = 255 - mask
+            mask = skimage.measure.block_reduce(mask, (8, 8), np.max)
+            mask = mask.repeat(8, axis=0).repeat(8, axis=1)
+            extra_kwargs["strength"] = strength
             inpaint_func = inpaint
             init_image = Image.fromarray(img)
             mask_image = Image.fromarray(mask)
@@ -332,6 +356,8 @@ class StableDiffusionInpaint:
                         (process_width, process_height), resample=SAMPLING_MODE
                     ),
                     mask_image=mask_image.resize((process_width, process_height)),
+                    width=process_width,
+                    height=process_height,
                     **extra_kwargs,
                 )["images"]
         return images
@@ -343,6 +369,7 @@ class StableDiffusion:
         token: str = "",
         model_name: str = "CompVis/stable-diffusion-v1-4",
         model_path: str = None,
+        inpainting_model: bool = False,
         **kwargs,
     ):
         self.token = token
@@ -403,15 +430,24 @@ class StableDiffusion:
             )
         )
         self.safety_checker = text2img.safety_checker
-        inpaint = StableDiffusionInpaintPipeline(
-            vae=text2img.vae,
-            text_encoder=text2img.text_encoder,
-            tokenizer=text2img.tokenizer,
-            unet=text2img.unet,
-            scheduler=text2img.scheduler,
-            safety_checker=text2img.safety_checker,
-            feature_extractor=text2img.feature_extractor,
-        ).to(device)
+        if inpainting_model:
+            # can reduce vRAM by reusing models except unet
+            inpaint = StableDiffusionInpaintPipeline.from_pretrained(
+                "runwayml/stable-diffusion-inpainting",
+                revision="fp16",
+                torch_dtype=torch.float16,
+                use_auth_token=token,
+            ).to(device)
+        else:
+            inpaint = StableDiffusionInpaintPipelineLegacy(
+                vae=text2img.vae,
+                text_encoder=text2img.text_encoder,
+                tokenizer=text2img.tokenizer,
+                unet=text2img.unet,
+                scheduler=text2img.scheduler,
+                safety_checker=text2img.safety_checker,
+                feature_extractor=text2img.feature_extractor,
+            ).to(device)
         img2img = StableDiffusionImg2ImgPipeline(
             vae=text2img.vae,
             text_encoder=text2img.text_encoder,
@@ -442,6 +478,7 @@ class StableDiffusion:
             safety_checker=text2img.safety_checker,
             feature_extractor=text2img.feature_extractor,
         ).to(device)
+        self.inpainting_model = inpainting_model
 
     def run(
         self,
@@ -507,7 +544,7 @@ class StableDiffusion:
                     **extra_kwargs,
                 )["images"]
         elif mask.sum() > 0:
-            if fill_mode == "g_diffuser":
+            if fill_mode == "g_diffuser" and not self.inpainting_model:
                 mask = 255 - mask
                 mask = mask[:, :, np.newaxis].repeat(3, axis=2)
                 img, mask, out_mask = functbl[fill_mode](img, mask)
@@ -525,11 +562,15 @@ class StableDiffusion:
             mask_image = Image.fromarray(mask)
             # mask_image=mask_image.filter(ImageFilter.GaussianBlur(radius = 8))
             with autocast("cuda"):
+                input_image = init_image.resize(
+                    (process_width, process_height), resample=SAMPLING_MODE
+                )
                 images = inpaint_func(
                     prompt=prompt,
-                    init_image=init_image.resize(
-                        (process_width, process_height), resample=SAMPLING_MODE
-                    ),
+                    init_image=input_image,
+                    image=input_image,
+                    width=process_width,
+                    height=process_height,
                     mask_image=mask_image.resize((process_width, process_height)),
                     **extra_kwargs,
                 )["images"]
@@ -579,28 +620,31 @@ if args.auth is not None:
 
 def get_model(token="", model_choice="", model_path=""):
     if "model" not in model:
-        if not USE_GLID and model_choice == "glid-3-xl-stable":
-            model_choice = "stablediffusion"
+        model_name = ""
         if args.local_model:
-            print(f"Using {args.local_model}")
-            tmp = StableDiffusion(token=token, model_path=args.local_model)
+            print(f"Using local_model: {args.local_model}")
+            model_path = args.local_model
         elif args.remote_model:
-            print(f"Using {args.remote_model}")
-            tmp = StableDiffusion(token=token, model_name=args.remote_model)
-        elif model_path:
-            print(f"Using {model_path}")
-            tmp = StableDiffusion(token=token, model_name=model_path)
-        elif model_choice == "stablediffusion":
-            tmp = StableDiffusion(token)
-        elif model_choice == "stablediffusion-inpainting":
+            print(f"Using remote_model: {args.remote_model}")
+            model_name = args.remote_model
+        if model_choice == ModelChoice.INPAINTING.value:
+            if len(model_name) < 1:
+                model_name = "runwayml/stable-diffusion-inpainting"
+            print(f"Using [{model_name}] {model_path}")
             tmp = StableDiffusionInpaint(
-                token=token, model_name="runwayml/stable-diffusion-inpainting"
+                token=token, model_name=model_name, model_path=model_path
             )
+        elif model_choice == ModelChoice.INPAINTING_IMG2IMG.value:
+            print(
+                f"Note that {ModelChoice.INPAINTING_IMG2IMG.value} only support remote model and requires larger vRAM"
+            )
+            tmp = StableDiffusion(token=token, inpainting_model=True)
         else:
-            config_lst = ["--edit", "a.png", "--mask", "mask.png"]
-            if device == "cpu":
-                config_lst.append("--cpu")
-            tmp = GlidModel(config_lst)
+            if len(model_name) < 1:
+                model_name = "CompVis/stable-diffusion-v1-4"
+            tmp = StableDiffusion(
+                token=token, model_name=model_name, model_path=model_path
+            )
         model["model"] = tmp
     return model["model"]
 
@@ -721,11 +765,7 @@ with blocks as demo:
     frame = gr.HTML(test(2), visible=RUN_IN_SPACE)
     # setup
     if not RUN_IN_SPACE:
-        model_choices_lst = [
-            "stablediffusion-inpainting",
-            "stablediffusion",
-            "glid-3-xl-stable",
-        ]
+        model_choices_lst = [item.value for item in ModelChoice]
         if args.local_model:
             model_path_input_val = args.local_model
             # model_choices_lst.insert(0, "local_model")
@@ -743,7 +783,7 @@ with blocks as demo:
                 model_selection = gr.Radio(
                     label="Choose a model here",
                     choices=model_choices_lst,
-                    value=model_choices_lst[1],
+                    value=ModelChoice.INPAINTING.value,
                 )
             with gr.Column(scale=1, min_width=100):
                 canvas_width = gr.Number(

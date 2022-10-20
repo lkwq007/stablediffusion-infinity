@@ -143,8 +143,10 @@ def mean_fill(img, mask):
     return img, mask
 
 """
+Apache-2.0 license
 https://github.com/hafriedlander/stable-diffusion-grpcserver/blob/main/sdgrpcserver/services/generate.py
 https://github.com/parlance-zz/g-diffuser-bot/tree/g-diffuser-bot-beta2
+_handleImageAdjustment
 """
 if True:
     from sd_grpcserver.sdgrpcserver import images
@@ -192,13 +194,14 @@ def g_diffuser(img,mask):
 def dummy_fill(img,mask):
     return img,mask
 functbl = {
-    "g_diffuser": g_diffuser,
+    "gaussian": gaussian_noise,
     "perlin": perlin_noise,
     "edge_pad": edge_pad,
     "patchmatch": patch_match_func if patch_match_compiled else edge_pad,
     "cv2_ns": cv2_ns,
     "cv2_telea": cv2_telea,
-    "disabled": dummy_fill,
+    "g_diffuser": g_diffuser,
+    "g_diffuser_lib": dummy_fill,
 }
 
 try:
