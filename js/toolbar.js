@@ -38,6 +38,65 @@ document.querySelector("#upload_state").addEventListener("change", (event)=>{
     getText(file);
 })
 
+open_setting = function() {
+    if (!w2ui.foo) {
+        new w2form({
+            name: "foo",
+            style: "border: 0px; background-color: transparent;",
+            fields: [{
+                    field: "canvas_width",
+                    type: "int",
+                    required: true,
+                    html: {
+                        label: "Canvas Width"
+                    }
+                },
+                {
+                    field: "canvas_height",
+                    type: "int",
+                    required: true,
+                    html: {
+                        label: "Canvas Height"
+                    }
+                },
+            ],
+            record: {
+                canvas_width: 1200,
+                canvas_height: 600,
+            },
+            actions: {
+                Save() {
+                    this.validate();
+                    let record = this.getCleanRecord();
+                    window.postMessage(["resize",record.width,record.height],"*");
+                },
+                custom: {
+                    text: "Cancel",
+                    style: "text-transform: uppercase",
+                    onClick(event) {
+                        w2popup.close();
+                    }
+                }
+            }
+        });
+    }
+    w2popup.open({
+            title: "Form in a Popup",
+            body: "<div id='form' style='width: 100%; height: 100%;''></div>",
+            style: "padding: 15px 0px 0px 0px",
+            width: 500,
+            height: 280,
+            showMax: true,
+            async onToggle(event) {
+                await event.complete
+                w2ui.foo.resize();
+            }
+        })
+        .then((event) => {
+            w2ui.foo.render("#form")
+        });
+}
+
 var button_lst=["clear", "load", "save", "export", "upload", "selection", "canvas", "eraser", "outpaint", "accept", "cancel", "retry", "prev", "current", "next", "eraser_size_btn", "eraser_size", "resize_selection", "scale", "zoom_in", "zoom_out", "help"];
 var upload_button_lst=['clear', 'load', 'save', "upload", 'export', 'outpaint', 'resize_selection', 'help'];
 var resize_button_lst=['clear', 'load', 'save', "upload", 'export', "selection", "canvas", "eraser", 'outpaint', 'resize_selection',"zoom_in", "zoom_out", 'help'];
@@ -55,7 +114,7 @@ var toolbar=new w2toolbar({
     name: "toolbar",
     tooltip: "top",
     items: [
-        { type: "button", id: "clear", text: "Reset", icon: "fa-solid fa-rectangle-xmark" },
+        { type: "button", id: "clear", text: "Reset", tooltip: "Reset Canvas", icon: "fa-solid fa-rectangle-xmark" },
         { type: "break" },
         { type: "button", id: "load", tooltip: "Load Canvas", icon: "fa-solid fa-file-import" },
         { type: "button", id: "save", tooltip: "Save Canvas", icon: "fa-solid fa-file-export" },
@@ -67,11 +126,11 @@ var toolbar=new w2toolbar({
         { type: "radio", id: "canvas", group: "1", tooltip: "Canvas", icon: "fa-solid fa-image" },
         { type: "radio", id: "eraser", group: "1", tooltip: "Eraser", icon: "fa-solid fa-eraser" },
         { type: "break" },
-        { type: "button", id: "outpaint", text: "Outpaint", icon: "fa-solid fa-brush" },
+        { type: "button", id: "outpaint", text: "Outpaint", tooltip: "Run Outpainting", icon: "fa-solid fa-brush" },
         { type: "break" },
-        { type: "button", id: "accept", text: "Accept", icon: "fa-solid fa-check", hidden: true, disable:true,},
-        { type: "button", id: "cancel", text: "Cancel", icon: "fa-solid fa-ban", hidden: true},
-        { type: "button", id: "retry", text: "Retry", icon: "fa-solid fa-rotate", hidden: true, disable:true,},
+        { type: "button", id: "accept", text: "Accept", tooltip: "Accept current result", icon: "fa-solid fa-check", hidden: true, disable:true,},
+        { type: "button", id: "cancel", text: "Cancel", tooltip: "Cancel current outpainting/error", icon: "fa-solid fa-ban", hidden: true},
+        { type: "button", id: "retry", text: "Retry", tooltip: "Retry", icon: "fa-solid fa-rotate", hidden: true, disable:true,},
         { type: "button", id: "prev", tooltip: "Prev Result", icon: "fa-solid fa-caret-left", hidden: true, disable:true,},
         { type: "html", id: "current", hidden: true, disable:true,
             async onRefresh(event) {
@@ -113,7 +172,7 @@ var toolbar=new w2toolbar({
             }
         },
         // { type: "button", id: "resize_eraser", tooltip: "Resize Eraser", icon: "fa-solid fa-sliders" },
-        { type: "button", id: "resize_selection", tooltip: "Resize Selection", icon: "fa-solid fa-expand" },
+        { type: "button", id: "resize_selection", text: "Resize Selection", tooltip: "Resize Selection", icon: "fa-solid fa-expand" },
         { type: "break" },
         { type: "html", id: "scale",
             async onRefresh(event) {
@@ -156,6 +215,9 @@ var toolbar=new w2toolbar({
     ],
     onClick(event) {
         switch(event.target){
+            case "setting":
+                open_setting();
+                break;
             case "upload":
                 this.upload_mode=true
                 document.querySelector("#overlay_container").style.pointerEvents="auto";
@@ -194,6 +256,11 @@ var toolbar=new w2toolbar({
                 {
                     this.enable(...resize_button_lst);
                     window.postMessage(["resize_selection","",""],"*");
+                    this.selection_box=this.selection_box_bak;
+                }
+                if(this.selection_box)
+                {
+                    this.setCount("resize_selection",`${Math.floor(this.selection_box.width/8)*8}x${Math.floor(this.selection_box.height/8)*8}`);
                 }
                 this.disable("confirm","cancel_overlay","add_image","delete_image");
                 this.upload_mode=false;
@@ -216,7 +283,8 @@ var toolbar=new w2toolbar({
                 }
                 break;
             case "load":
-                query("#upload_state").click()
+                query("#upload_state").click();
+                this.setCount("resize_selection","");
                 break;
             case "next":
             case "prev":
@@ -280,7 +348,10 @@ var toolbar=new w2toolbar({
                 }
                 break;
             case "help":
-                w2alert("stablediffusion-infinity: https://github.com/lkwq007/stablediffusion-infinity");
+                w2popup.open({
+                    title: "Document",
+                    body: "Usage: <a href='https://github.com/lkwq007/stablediffusion-infinity/blob/master/docs/setup_guide.md'  target='_blank'>https://github.com/lkwq007/stablediffusion-infinity/blob/master/docs/setup_guide.md</a>"
+                })
                 break;
             case "clear":
                 w2confirm("Reset canvas?").yes(() => {
@@ -352,6 +423,8 @@ function onObjectScaled(e)
         let t=Math.max(Math.min(object.top,window.overlay.height-height-object.strokeWidth),0);
         object.set({ width: width, height: height, left:l,top:t})
         window.w2ui.toolbar.selection_box={width: width, height: height, x:object.left, y:object.top};
+        window.w2ui.toolbar.setCount("resize_selection",`${Math.floor(width/8)*8}x${Math.floor(height/8)*8}`);
+        window.w2ui.toolbar.refresh();
     }
 }
 function onObjectMoved(e)
@@ -413,6 +486,8 @@ window.adjust_selection=function(x,y,width,height)
     rect.setControlsVisibility({ mtr: false });
     window.overlay.add(rect);
     window.overlay.setActiveObject(window.overlay.item(0));
+    window.w2ui.toolbar.selection_box={width: width, height: height, x:x, y:y};
+    window.w2ui.toolbar.selection_box_bak={width: width, height: height, x:x, y:y};
 }
 function add_image(url)
 {

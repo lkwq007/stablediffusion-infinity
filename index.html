@@ -327,6 +327,24 @@ async def resize_selection_func(event):
         base.canvas[-1].clear()
         adjust_selection(cursor[0],cursor[1],base.selection_size_w,base.selection_size_h)
 
+async def eraser_func(event):
+    base=base_lst[0]
+    if event.data[1]!="eraser":
+        base.canvas[-2].clear()
+    else:
+        x,y=base.mouse_pos
+        base.draw_eraser(x,y)
+
+async def resize_func(event):
+    base=base_lst[0]
+    width=int(event.data[1])
+    height=int(event.data[2])
+    if width>=256 and height>=256:
+        if max(base.selection_size_h,base.selection_size_w)>min(width,height):
+            base.selection_size_h=256
+            base.selection_size_w=256
+        base.resize(width,height)
+
 async def message_func(event):
     if event.data[0]=="click":
         if event.data[1]=="clear":
@@ -354,6 +372,8 @@ async def message_func(event):
     elif event.data[0]=="mode":
         if event.data[1]!="selection":
             await sync_func(event)
+        if event.data[1]!="eraser":
+            await eraser_func(event)
         document.querySelector("#mode").value=event.data[1]
     elif event.data[0]=="transfer":
         await transfer_func(event)
@@ -365,6 +385,8 @@ async def message_func(event):
         await resize_selection_func(event)
     elif event.data[0]=="shortcut":
         await setup_shortcut_func(event)
+    elif event.data[0]=="resize":
+        await resize_func(event)
     
 window.addEventListener("message",create_proxy(message_func))
 

@@ -159,6 +159,25 @@ class InfCanvas:
         self.canvas[2].canvas.style.display="block"
         self.canvas[2].clear()
 
+    def draw_eraser(self, x, y):
+        self.canvas[-2].clear()
+        self.canvas[-2].fill_style = "#ffffff"
+        self.canvas[-2].fill_rect(x-self.eraser_size//2,y-self.eraser_size//2,self.eraser_size,self.eraser_size)
+        self.canvas[-2].stroke_rect(x-self.eraser_size//2,y-self.eraser_size//2,self.eraser_size,self.eraser_size)
+
+    def use_eraser(self,x,y):
+        if self.sel_dirty:
+            self.write_selection_to_buffer()
+            self.draw_buffer()
+            self.canvas[2].clear()
+        self.buffer_dirty=True
+        bx0,by0=int(x)-self.eraser_size//2,int(y)-self.eraser_size//2
+        bx1,by1=bx0+self.eraser_size,by0+self.eraser_size
+        bx0,by0=max(0,bx0),max(0,by0)
+        bx1,by1=min(self.width,bx1),min(self.height,by1)
+        self.buffer[by0:by1,bx0:bx1,:]*=0
+        self.draw_buffer()
+        self.draw_selection_box()
 
     def setup_mouse(self):
         self.image_move_cnt = 0
@@ -180,6 +199,9 @@ class InfCanvas:
 
         def handle_mouse_down(event):
             self.mouse_state = get_mouse_mode()
+            if self.mouse_state==BRUSH_MODE:
+                x,y=get_event_pos()
+                self.use_eraser(x,y)
 
         def handle_mouse_out(event):
             last_state = self.mouse_state
@@ -250,25 +272,11 @@ class InfCanvas:
                 self.clear_background()
                     # self.image_move_cnt = 0
             elif self.mouse_state == BRUSH_MODE:
-                if self.sel_dirty:
-                    self.write_selection_to_buffer()
-                    self.draw_buffer()
-                    self.canvas[2].clear()
-                self.buffer_dirty=True
-                bx0,by0=int(x)-self.eraser_size//2,int(y)-self.eraser_size//2
-                bx1,by1=bx0+self.eraser_size,by0+self.eraser_size
-                bx0,by0=max(0,bx0),max(0,by0)
-                bx1,by1=min(self.width,bx1),min(self.height,by1)
-                self.buffer[by0:by1,bx0:bx1,:]*=0
-                self.draw_buffer()
-                self.draw_selection_box()
+                self.use_eraser(x,y)
 
             mode = document.querySelector("#mode").value
             if mode == BRUSH_SELECTION:
-                self.canvas[-2].clear()
-                self.canvas[-2].fill_style = "#ffffff"
-                self.canvas[-2].fill_rect(x-self.eraser_size//2,y-self.eraser_size//2,self.eraser_size,self.eraser_size)
-                self.canvas[-2].stroke_rect(x-self.eraser_size//2,y-self.eraser_size//2,self.eraser_size,self.eraser_size)
+                self.draw_eraser(x,y)
                 self.show_brush = True
             elif self.show_brush:
                 self.canvas[-2].clear()
