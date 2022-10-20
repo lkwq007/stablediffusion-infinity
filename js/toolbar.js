@@ -68,7 +68,8 @@ open_setting = function() {
                 Save() {
                     this.validate();
                     let record = this.getCleanRecord();
-                    window.postMessage(["resize",record.width,record.height],"*");
+                    window.postMessage(["resize",record.canvas_width,record.canvas_height],"*");
+                    w2popup.close();
                 },
                 custom: {
                     text: "Cancel",
@@ -284,6 +285,7 @@ var toolbar=new w2toolbar({
                 break;
             case "load":
                 query("#upload_state").click();
+                this.selection_box=null;
                 this.setCount("resize_selection","");
                 break;
             case "next":

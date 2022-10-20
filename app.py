@@ -819,11 +819,12 @@ with blocks as demo:
                 label="Init Mode",
                 choices=[
                     "patchmatch",
-                    "g_diffuser",
                     "edge_pad",
                     "cv2_ns",
                     "cv2_telea",
                     "perlin",
+                    "gaussian",
+                    "g_diffuser",
                 ],
                 value="patchmatch",
                 type="value",

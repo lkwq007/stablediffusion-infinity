@@ -200,7 +200,7 @@ class InfCanvas:
         def handle_mouse_down(event):
             self.mouse_state = get_mouse_mode()
             if self.mouse_state==BRUSH_MODE:
-                x,y=get_event_pos()
+                x,y=get_event_pos(event)
                 self.use_eraser(x,y)
 
         def handle_mouse_out(event):

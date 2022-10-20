@@ -372,8 +372,7 @@ async def message_func(event):
     elif event.data[0]=="mode":
         if event.data[1]!="selection":
             await sync_func(event)
-        if event.data[1]!="eraser":
-            await eraser_func(event)
+        await eraser_func(event)
         document.querySelector("#mode").value=event.data[1]
     elif event.data[0]=="transfer":
         await transfer_func(event)
