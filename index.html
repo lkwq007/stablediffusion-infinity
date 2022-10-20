@@ -191,16 +191,18 @@ async def outpaint_func(event):
 async def undo_func(event):
     base=base_lst[0]
     img_candidate_lst[0]=None
-    base.canvas[2].clear()
     if base.sel_dirty:
         base.sel_buffer = np.zeros((base.selection_size_h, base.selection_size_w, 4), dtype=np.uint8)
         base.sel_dirty = False
+    base.canvas[2].clear()
 
 async def commit_func(event):
     base=base_lst[0]
     img_candidate_lst[0]=None
     if base.sel_dirty:
         base.write_selection_to_buffer()
+        base.draw_buffer()
+    base.canvas[2].clear()
 
 async def transfer_func(event):
     base=base_lst[0]
@@ -300,6 +302,7 @@ async def zoom_out_func(event):
 async def sync_func(event):
     base=base_lst[0]
     base.sync_to_buffer()
+    base.canvas[2].clear()
 
 async def eraser_size_func(event):
     base=base_lst[0]

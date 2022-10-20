@@ -55,7 +55,7 @@ dependencies:
   - debugpy=1.6.0=py310hd8f1fbe_0
   - decorator=5.1.1=pyhd8ed1ab_0
   - defusedxml=0.7.1=pyhd8ed1ab_0
-  - diffusers=0.5.1=pyhd8ed1ab_0
+  - diffusers=0.6.0=pyhd8ed1ab_0
   - dill=0.3.5.1=pyhd8ed1ab_0
   - docstring-to-markdown=0.10=pyhd8ed1ab_0
   - entrypoints=0.4=pyhd8ed1ab_0

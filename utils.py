@@ -182,22 +182,23 @@ if True:
                 self.unimp("Rescale")
             elif which == "crop":
                 tensor = images.crop(tensor, adjustment.crop.top, adjustment.crop.left, adjustment.crop.height, adjustment.crop.width)
-        return np.array(images.toPIL(tensor))
+        return np.array(images.toPIL(tensor)[0])
 
 def g_diffuser(img,mask):
     adjustments=[["blur",32,"UP"],["level",0,0.05,0,1]]
     mask=handleImageAdjustment(mask,adjustments)
     out_mask=handleImageAdjustment(mask,adjustments)
     return img, mask, out_mask
-
+def dummy_fill(img,mask):
+    return img,mask
 functbl = {
     "g_diffuser": g_diffuser,
     "perlin": perlin_noise,
     "edge_pad": edge_pad,
-    "patchmatch": patch_match_func if patch_match_compiled else g_diffuser,
+    "patchmatch": patch_match_func if patch_match_compiled else edge_pad,
     "cv2_ns": cv2_ns,
     "cv2_telea": cv2_telea,
-    "mean_fill": mean_fill,
+    "disabled": dummy_fill,
 }
 
 try:
@@ -236,6 +237,8 @@ if "taichi" in correction_func.backend:
             self.backend=correction_func.backend
             self.child= Popen(["python", "postprocess.py"], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
         def run(self,img_input,img_inpainted,mode):
+            if mode=="disabled":
+                return img_inpainted
             base64_str_input = pil_to_base64(img_input)
             base64_str_inpainted = pil_to_base64(img_inpainted)
             self.child.stdin.write(f"{base64_str_input},{base64_str_inpainted},{mode}\n".encode())
@@ -246,3 +249,4 @@ if "taichi" in correction_func.backend:
                 out = self.child.stdout.readline()
                 base64_str=out.decode().strip()
             return base64_to_pil(base64_str)
+    correction_func = SubprocessCorrection()

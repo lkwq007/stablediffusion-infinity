@@ -38,6 +38,7 @@ RUN_IN_SPACE = "RUN_IN_HG_SPACE" in os.environ
 
 try:
     from sd_grpcserver.pipeline.unified_pipeline import UnifiedPipeline
+    print("Using UnifiedPipeline")
 except:
     UnifiedPipeline = StableDiffusionInpaintPipeline
 
@@ -203,7 +204,140 @@ def load_learned_embed_in_clip(
 
 scheduler_dict = {"PLMS": None, "DDIM": None, "K-LMS": None}
 
+class StableDiffusionInpaint:
+    def __init__(
+        self,
+        token: str = "",
+        model_name: str = "",
+        model_path: str = None,
+        **kwargs,
+    ):
+        self.token = token
+        print(f"Loading {model_name}")
+        if device == "cuda":
+            inpaint = StableDiffusionInpaintPipeline.from_pretrained(
+                model_name,
+                revision="fp16",
+                torch_dtype=torch.float16,
+                use_auth_token=token,
+            )
+        else:
+            inpaint = StableDiffusionInpaintPipeline.from_pretrained(
+                model_name, use_auth_token=token,
+            )
+        if False and os.path.exists("./embeddings"):
+            for item in os.listdir("./embeddings"):
+                if item.endswith(".bin"):
+                    load_learned_embed_in_clip(
+                        os.path.join("./embeddings", item),
+                        inpaint.text_encoder,
+                        inpaint.tokenizer,
+                    )
+        inpaint.to(device)
+        # if device == "mps":
+            # _ = text2img("", num_inference_steps=1)
+        scheduler_dict["PLMS"] = inpaint.scheduler
+        scheduler_dict["DDIM"] = prepare_scheduler(
+            DDIMScheduler(
+                beta_start=0.00085,
+                beta_end=0.012,
+                beta_schedule="scaled_linear",
+                clip_sample=False,
+                set_alpha_to_one=False,
+            )
+        )
+        scheduler_dict["K-LMS"] = prepare_scheduler(
+            LMSDiscreteScheduler(
+                beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear"
+            )
+        )
+        self.safety_checker = inpaintn.safety_checker
+        save_token(token)
+        try:
+            total_memory = torch.cuda.get_device_properties(0).total_memory // (
+                1024 ** 3
+            )
+            if total_memory <= 5:
+                inpaint.enable_attention_slicing()
+        except:
+            pass
+        self.inpaint = inpaint
 
+    def run(
+        self,
+        image_pil,
+        prompt="",
+        negative_prompt="",
+        guidance_scale=7.5,
+        resize_check=True,
+        enable_safety=True,
+        fill_mode="patchmatch",
+        strength=0.75,
+        step=50,
+        enable_img2img=False,
+        use_seed=False,
+        seed_val=-1,
+        generate_num=1,
+        scheduler="",
+        scheduler_eta=0.0,
+        **kwargs,
+    ):
+        inpaint = self.inpaint
+        selected_scheduler = scheduler_dict.get(scheduler, scheduler_dict["PLMS"])
+        for item in [inpaint]:
+            item.scheduler = selected_scheduler
+            if enable_safety:
+                item.safety_checker = self.safety_checker
+            else:
+                item.safety_checker = lambda images, **kwargs: (images, False)
+        width, height = image_pil.size
+        sel_buffer = np.array(image_pil)
+        img = sel_buffer[:, :, 0:3]
+        mask = sel_buffer[:, :, -1]
+        nmask = 255 - mask
+        process_width = width
+        process_height = height
+        if resize_check:
+            process_width, process_height = my_resize(width, height)
+        extra_kwargs = {
+            "num_inference_steps": step,
+            "guidance_scale": guidance_scale,
+            "eta": scheduler_eta,
+        }
+        if USE_NEW_DIFFUSERS:
+            extra_kwargs["negative_prompt"] = negative_prompt
+            extra_kwargs["num_images_per_prompt"] = generate_num
+        if use_seed:
+            generator = torch.Generator(inpaint.device).manual_seed(seed_val)
+            extra_kwargs["generator"] = generator
+        if True:
+            if fill_mode == "g_diffuser":
+                mask = 255 - mask
+                mask = mask[:,:,np.newaxis].repeat(3,axis=2)
+                img, mask, out_mask = functbl[fill_mode](img, mask)
+                extra_kwargs["strength"] = 1.0
+                extra_kwargs["out_mask"] = Image.fromarray(out_mask)
+                inpaint_func = unified
+            else:
+                img, mask = functbl[fill_mode](img, mask)
+                mask = 255 - mask
+                mask = skimage.measure.block_reduce(mask, (8, 8), np.max)
+                mask = mask.repeat(8, axis=0).repeat(8, axis=1)
+                extra_kwargs["strength"] = strength
+                inpaint_func = inpaint
+            init_image = Image.fromarray(img)
+            mask_image = Image.fromarray(mask)
+            # mask_image=mask_image.filter(ImageFilter.GaussianBlur(radius = 8))
+            with autocast("cuda"):
+                images = inpaint_func(
+                    prompt=prompt,
+                    image=init_image.resize(
+                        (process_width, process_height), resample=SAMPLING_MODE
+                    ),
+                    mask_image=mask_image.resize((process_width, process_height)),
+                    **extra_kwargs,
+                )["images"]
+        return images
 class StableDiffusion:
     def __init__(
         self,
@@ -372,10 +506,11 @@ class StableDiffusion:
                     ),
                     strength=strength,
                     **extra_kwargs,
-                )["sample"]
+                )["images"]
         elif mask.sum() > 0:
             if fill_mode == "g_diffuser":
                 mask = 255 - mask
+                mask = mask[:,:,np.newaxis].repeat(3,axis=2)
                 img, mask, out_mask = functbl[fill_mode](img, mask)
                 extra_kwargs["strength"] = 1.0
                 extra_kwargs["out_mask"] = Image.fromarray(out_mask)
@@ -398,7 +533,7 @@ class StableDiffusion:
                     ),
                     mask_image=mask_image.resize((process_width, process_height)),
                     **extra_kwargs,
-                )["sample"]
+                )["images"]
         else:
             with autocast("cuda"):
                 images = text2img(
@@ -406,7 +541,7 @@ class StableDiffusion:
                     height=process_width,
                     width=process_height,
                     **extra_kwargs,
-                )["sample"]
+                )["images"]
         return images
 
 
@@ -447,10 +582,10 @@ def get_model(token="", model_choice="", model_path=""):
     if "model" not in model:
         if not USE_GLID and model_choice == "glid-3-xl-stable":
             model_choice = "stablediffusion"
-        if model_choice == "local_model":
+        if args.local_model:
             print(f"Using {args.local_model}")
             tmp = StableDiffusion(token=token, model_path=args.local_model)
-        elif model_choice == "remote_model":
+        elif args.remote_model:
             print(f"Using {args.remote_model}")
             tmp = StableDiffusion(token=token, model_name=args.remote_model)
         elif model_path:
@@ -458,8 +593,8 @@ def get_model(token="", model_choice="", model_path=""):
             tmp = StableDiffusion(token=token, model_name=model_path)
         elif model_choice == "stablediffusion":
             tmp = StableDiffusion(token)
-        elif model_choice == "waifudiffusion":
-            tmp = StableDiffusion(token=token, model_name="hakurei/waifu-diffusion")
+        elif model_choice == "stablediffusion-inpainting":
+            tmp = StableDiffusionInpaint(token=token, model_name="runwayml/stable-diffusion-inpainting")
         else:
             config_lst = ["--edit", "a.png", "--mask", "mask.png"]
             if device == "cpu":
@@ -585,13 +720,13 @@ with blocks as demo:
     frame = gr.HTML(test(2), visible=RUN_IN_SPACE)
     # setup
     if not RUN_IN_SPACE:
-        model_choices_lst = ["stablediffusion", "waifudiffusion", "glid-3-xl-stable"]
+        model_choices_lst = ["stablediffusion-inpainting", "stablediffusion", "glid-3-xl-stable"]
         if args.local_model:
             model_path_input_val = args.local_model
-            model_choices_lst.insert(0, "local_model")
+            # model_choices_lst.insert(0, "local_model")
         elif args.remote_model:
             model_path_input_val = args.remote_model
-            model_choices_lst.insert(0, "remote_model")
+            # model_choices_lst.insert(0, "remote_model")
         with gr.Row(elem_id="setup_row"):
             with gr.Column(scale=4, min_width=350):
                 token = gr.Textbox(
@@ -600,10 +735,10 @@ with blocks as demo:
                     placeholder="Input your token here/Ignore this if using local model",
                 )
             with gr.Column(scale=3, min_width=320):
-                model_selection = gr.Dropdown(
+                model_selection = gr.Radio(
                     label="Choose a model here",
                     choices=model_choices_lst,
-                    value=model_choices_lst[0],
+                    value=model_choices_lst[1],
                 )
             with gr.Column(scale=1, min_width=100):
                 canvas_width = gr.Number(
@@ -639,10 +774,12 @@ with blocks as demo:
                 label="Init Mode",
                 choices=[
                     "patchmatch",
-                    "g_diffuser" "edge_pad",
+                    "g_diffuser",
+                    "edge_pad",
                     "cv2_ns",
                     "cv2_telea",
                     "perlin",
+                    "disabled"
                 ],
                 value="patchmatch",
                 type="value",
@@ -713,6 +850,7 @@ with blocks as demo:
     upload_output = gr.Textbox(visible=DEBUG_MODE, elem_id="upload", label="0")
     model_output_state = gr.State(value=0)
     upload_output_state = gr.State(value=0)
+    cancel_button = gr.Button("Cancel",elem_id="cancel",visible=False)
     if not RUN_IN_SPACE:
 
         def setup_func(token_val, width, height, size, model_choice, model_path):
@@ -757,7 +895,7 @@ with blocks as demo:
             _js=setup_button_js,
         )
 
-    proceed_button.click(
+    proceed_event=proceed_button.click(
         fn=run_outpaint,
         inputs=[
             model_input,
@@ -781,6 +919,8 @@ with blocks as demo:
         outputs=[model_output, sd_prompt, model_output_state],
         _js=proceed_button_js,
     )
+    # cancel_button.click(fn=None, inputs=None, outputs=None, cancels=[proceed_event])
+
 
 launch_extra_kwargs = {
     "show_error": True,
