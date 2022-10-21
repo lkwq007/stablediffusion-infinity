@@ -29,6 +29,20 @@ python app.py --remote_model model_name
 python app.py --remote_model hakurei/waifu-diffusion-v1-3
 ```
 
+## Using textual inversion embeddings 
+
+Put `*.bin` inside `embeddings` directory. 
+
+## Using a dreambooth finetuned model
+
+```
+python app.py --remote_model model_name
+# e.g.
+python app.py --remote_model sd-dreambooth-library/pikachu
+# or download the weight/checkpoint and load with
+python app.py --local_model path_to_model
+```
+
 ## Model Path for Docker users
 
 Docker users can specify a local model path or remote mode name within the web app. 
