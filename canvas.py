@@ -332,12 +332,10 @@ class InfCanvas:
 
     def refine_selection(self):
         h,w=self.selection_size_h,self.selection_size_w
-        h=h//8*8
-        w=w//8*8
         h=min(h,self.height)
         w=min(w,self.width)
-        self.selection_size_h=h
-        self.selection_size_w=w
+        self.selection_size_h=h*8//8
+        self.selection_size_w=w*8//8
         self.update_cursor(1,0)
         
 

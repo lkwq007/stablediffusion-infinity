@@ -363,6 +363,8 @@ class StableDiffusionInpaint:
         process_height = height
         if resize_check:
             process_width, process_height = my_resize(width, height)
+        process_width = process_width*8//8
+        process_height = process_height*8//8
         extra_kwargs = {
             "num_inference_steps": step,
             "guidance_scale": guidance_scale,
