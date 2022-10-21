@@ -3,9 +3,9 @@
 ## Models
 
 - stablediffusion-inpainting: `runwayml/stable-diffusion-inpainting`, does not support img2img mode
-- stablediffusion-inpainting+img2img-v1.5: `runwayml/stable-diffusion-inpainting` + `runwayml/stable-diffusion-v1-5`, supports img2img mode
-- stablediffusion-v1.5: `runwayml/stable-diffusion-v1-5`, inpainting with `diffusers`'s legacy pipeline, supports img2img mode
-- stablediffusion-v1.4: `CompVis/stable-diffusion-v1-4`, inpainting with `diffusers`'s legacy pipeline, supports img2img mode
+- stablediffusion-inpainting+img2img-v1.5: `runwayml/stable-diffusion-inpainting` + `runwayml/stable-diffusion-v1-5`, supports img2img mode, requires larger vRAM
+- stablediffusion-v1.5: `runwayml/stable-diffusion-v1-5`, inpainting with `diffusers`'s legacy pipeline, low quality for outpainting, supports img2img mode
+- stablediffusion-v1.4: `CompVis/stable-diffusion-v1-4`, inpainting with `diffusers`'s legacy pipeline, low quality for outpainting, supports img2img mode
 
 ## Loading local model
 
