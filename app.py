@@ -43,8 +43,9 @@ RUN_IN_SPACE = "RUN_IN_HG_SPACE" in os.environ
 
 class ModelChoice(Enum):
     INPAINTING = "stablediffusion-inpainting"
-    INPAINTING_IMG2IMG = "stablediffusion-inpainting+img2img-v1.4"
-    OLD_MODEL = "stablediffusion-v1.4"
+    INPAINTING_IMG2IMG = "stablediffusion-inpainting+img2img-v1.5"
+    MODEL_1_5 = "stablediffusion-v1.5",
+    MODEL_1_4 = "stablediffusion-v1.4"
 
 
 try:
@@ -367,7 +368,7 @@ class StableDiffusion:
     def __init__(
         self,
         token: str = "",
-        model_name: str = "CompVis/stable-diffusion-v1-4",
+        model_name: str = "runwayml/stable-diffusion-v1-5",
         model_path: str = None,
         inpainting_model: bool = False,
         **kwargs,
@@ -401,6 +402,43 @@ class StableDiffusion:
                 text2img = StableDiffusionPipeline.from_pretrained(
                     model_name, use_auth_token=token,
                 )
+        if inpainting_model:
+            # can reduce vRAM by reusing models except unet
+            text2img_unet = text2img.unet
+            del text2img.vae
+            del text2img.text_encoder
+            del text2img.tokenizer
+            del text2img.scheduler
+            del text2img.safety_checker
+            del text2img.feature_extractor
+            import gc
+            gc.collect()
+            inpaint = StableDiffusionInpaintPipeline.from_pretrained(
+                "runwayml/stable-diffusion-inpainting",
+                revision="fp16",
+                torch_dtype=torch.float16,
+                use_auth_token=token,
+            ).to(device)
+            text2img_unet.to(device)
+            text2img = StableDiffusionPipeline(
+                vae=inpaint.vae,
+                text_encoder=inpaint.text_encoder,
+                tokenizer=inpaint.tokenizer,
+                unet=text2img_unet,
+                scheduler=inpaint.scheduler,
+                safety_checker=inpaint.safety_checker,
+                feature_extractor=inpaint.feature_extractor,
+            )
+        else:
+            inpaint = StableDiffusionInpaintPipelineLegacy(
+                vae=text2img.vae,
+                text_encoder=text2img.text_encoder,
+                tokenizer=text2img.tokenizer,
+                unet=text2img.unet,
+                scheduler=text2img.scheduler,
+                safety_checker=text2img.safety_checker,
+                feature_extractor=text2img.feature_extractor,
+            ).to(device)
         text_encoder = text2img.text_encoder
         tokenizer = text2img.tokenizer
         if os.path.exists("./embeddings"):
@@ -430,24 +468,6 @@ class StableDiffusion:
             )
         )
         self.safety_checker = text2img.safety_checker
-        if inpainting_model:
-            # can reduce vRAM by reusing models except unet
-            inpaint = StableDiffusionInpaintPipeline.from_pretrained(
-                "runwayml/stable-diffusion-inpainting",
-                revision="fp16",
-                torch_dtype=torch.float16,
-                use_auth_token=token,
-            ).to(device)
-        else:
-            inpaint = StableDiffusionInpaintPipelineLegacy(
-                vae=text2img.vae,
-                text_encoder=text2img.text_encoder,
-                tokenizer=text2img.tokenizer,
-                unet=text2img.unet,
-                scheduler=text2img.scheduler,
-                safety_checker=text2img.safety_checker,
-                feature_extractor=text2img.feature_extractor,
-            ).to(device)
         img2img = StableDiffusionImg2ImgPipeline(
             vae=text2img.vae,
             text_encoder=text2img.text_encoder,
@@ -641,7 +661,7 @@ def get_model(token="", model_choice="", model_path=""):
             tmp = StableDiffusion(token=token, inpainting_model=True)
         else:
             if len(model_name) < 1:
-                model_name = "CompVis/stable-diffusion-v1-4"
+                model_name = "runwayml/stable-diffusion-v1-5" if model_choice==ModelChoice.MODEL_1_5.value else "CompVis/stable-diffusion-v1-4"
             tmp = StableDiffusion(
                 token=token, model_name=model_name, model_path=model_path
             )

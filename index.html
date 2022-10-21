@@ -70,7 +70,7 @@
   </div>
 </div>
 <input type="file" name="file" id="upload_file" accept="image/*" hidden>
-<input type="file" name="state" id="upload_state" accept=".json" hidden>
+<input type="file" name="state" id="upload_state" accept=".sdinf" hidden>
 <div style="position: relative;">
 <div id="toolbar" style></div>
 </div>
@@ -156,11 +156,17 @@ async def export_func(event):
     base.canvas[2].clear()
     base64_str = base.numpy_to_base64(arr)
     time_str = time.strftime("%Y%m%d_%H%M%S")
-    console.log(f"Canvas saved to outpaint_{time_str}.png")
     link = document.createElement("a")
-    link.download = f"outpaint_{time_str}.png"
+    if len(event.data)>2 and event.data[2]:
+        filename = event.data[2]
+    else:
+        filename = f"outpaint_{time_str}"
+    # link.download = f"sdinf_state_{time_str}.json"
+    link.download = f"{filename}.png"
+    # link.download = f"outpaint_{time_str}.png"
     link.href = "data:image/png;base64,"+base64_str
     link.click()
+    console.log(f"Canvas saved to {filename}.png")
 
 img_candidate_lst=[None,0]
 
@@ -262,7 +268,12 @@ async def save_func(event):
     json_str=base.save()
     time_str = time.strftime("%Y%m%d_%H%M%S")
     link = document.createElement("a")
-    link.download = f"sdinf_state_{time_str}.json"
+    if len(event.data)>2 and event.data[2]:
+        filename = str(event.data[2]).strip()
+    else:
+        filename = f"outpaint_{time_str}"
+    # link.download = f"sdinf_state_{time_str}.json"
+    link.download = f"{filename}.sdinf"
     link.href = "data:text/json;charset=utf-8,"+encodeURIComponent(json_str)
     link.click()
 

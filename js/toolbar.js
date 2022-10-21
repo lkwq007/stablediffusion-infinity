@@ -376,6 +376,9 @@ var toolbar=new w2toolbar({
                 parent.config_obj=this.config_obj;
                 this.refresh();
                 break;
+            case "save":
+            case "export":
+                ask_filename(event.target);
             default:
                 // clear, save, export, outpaint, retry
                 // break, save, export, accept, retry, outpaint
@@ -511,6 +514,24 @@ function end_overlay()
     document.querySelector("#overlay_container").style.opacity = 1.0;
     document.querySelector("#overlay_container").style.pointerEvents="none";
 }
+function ask_filename(target)
+{
+    w2prompt({
+        label: "Enter filename",
+        value: `outpaint_${((new Date(Date.now() -(new Date()).getTimezoneOffset() * 60000))).toISOString().replace("T","_").replace(/[^0-9_]/g, "").substring(0,15)}`,
+    })
+    .change((event) => {
+        console.log("change", event.detail.originalEvent.target.value);
+    })
+    .ok((event) => {
+        console.log("value=", event.detail.value);
+        window.postMessage(["click",target,event.detail.value],"*");
+    })
+    .cancel((event) => {
+        console.log("cancel");
+    });
+}
+
 document.querySelector("#container").addEventListener("wheel",(e)=>{e.preventDefault()})
 window.setup_shortcut=function(json)
 {

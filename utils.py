@@ -248,7 +248,8 @@ if "taichi" in correction_func.backend:
             self.child.stdin.flush()
             out = self.child.stdout.readline()
             base64_str=out.decode().strip()
-            while base64_str[0]=="[":
+            while base64_str and base64_str[0]=="[":
+                print(base64_str)
                 out = self.child.stdout.readline()
                 base64_str=out.decode().strip()
             return base64_to_pil(base64_str)
