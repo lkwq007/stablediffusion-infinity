@@ -8,12 +8,11 @@ Outpainting with Stable Diffusion on an infinite canvas.
 
 Start with init_image (updated demo in Gradio):
 
-https://user-images.githubusercontent.com/1665437/193394123-d202efc8-24a7-41b3-a5cf-6b2e0b60db28.mp4
-
+https://user-images.githubusercontent.com/1665437/197244111-51884b3b-dffe-4dcf-a82a-fa5117c79934.mp4
 
 ## Status
 
-Powered by Stable Diffusion inpainting model, this project now works quite well. However, the quality of results is still not guaranteed.
+Powered by Stable Diffusion inpainting model, this project now works well. However, the quality of results is still not guaranteed.
 You may need to do prompt engineering, change the size of the selection, reduce the size of the outpainting region to get better outpainting results. 
 
 The project now becomes a web app based on PyScript and Gradio. For Jupyter Notebook version, please check out the [ipycanvas](https://github.com/lkwq007/stablediffusion-infinity/tree/ipycanvas) branch. 
