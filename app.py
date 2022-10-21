@@ -613,9 +613,9 @@ class StableDiffusion:
             if fill_mode == "g_diffuser" and not self.inpainting_model:
                 mask = 255 - mask
                 mask = mask[:, :, np.newaxis].repeat(3, axis=2)
-                img, mask, out_mask = functbl[fill_mode](img, mask)
+                img, mask = functbl[fill_mode](img, mask)
                 extra_kwargs["strength"] = 1.0
-                extra_kwargs["out_mask"] = Image.fromarray(out_mask)
+                extra_kwargs["out_mask"] = Image.fromarray(mask)
                 inpaint_func = unified
             else:
                 img, mask = functbl[fill_mode](img, mask)
@@ -775,7 +775,7 @@ proceed_button_js = load_js("proceed")
 setup_button_js = load_js("setup")
 
 if RUN_IN_SPACE:
-    get_model(token=os.environ.get("hftoken", ""), model_choice=ModelChoice.INPAINTING_IMG2IMG)
+    get_model(token=os.environ.get("hftoken", ""), model_choice=ModelChoice.INPAINTING_IMG2IMG.value)
 
 blocks = gr.Blocks(
     title="StableDiffusion-Infinity",

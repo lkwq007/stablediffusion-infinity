@@ -148,7 +148,7 @@ https://github.com/hafriedlander/stable-diffusion-grpcserver/blob/main/sdgrpcser
 https://github.com/parlance-zz/g-diffuser-bot/tree/g-diffuser-bot-beta2
 _handleImageAdjustment
 """
-if True:
+try:
     from sd_grpcserver.sdgrpcserver import images
     import torch
     from math import sqrt
@@ -186,11 +186,15 @@ if True:
                 tensor = images.crop(tensor, adjustment.crop.top, adjustment.crop.left, adjustment.crop.height, adjustment.crop.width)
         return np.array(images.toPIL(tensor)[0])
 
-def g_diffuser(img,mask):
-    adjustments=[["blur",32,"UP"],["level",0,0.05,0,1]]
-    mask=handleImageAdjustment(mask,adjustments)
-    out_mask=handleImageAdjustment(mask,adjustments)
-    return img, mask, out_mask
+    def g_diffuser(img,mask):
+        adjustments=[["blur",32,"UP"],["level",0,0.05,0,1]]
+        mask=handleImageAdjustment(mask,adjustments)
+        out_mask=handleImageAdjustment(mask,adjustments)
+        return img, mask
+except:
+    def g_diffuser(img,mask):
+        return img,mask
+
 def dummy_fill(img,mask):
     return img,mask
 functbl = {
