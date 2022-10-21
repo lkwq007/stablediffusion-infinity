@@ -51,28 +51,28 @@ try:
 except ImportError:
   taichi_solver = None  # type: ignore
 
-try:
-  from fpie import core_gcc  # type: ignore
-  DEFAULT_BACKEND = "gcc"
-  ALL_BACKEND.append("gcc")
-except ImportError:
-  core_gcc = None
+# try:
+#   from fpie import core_gcc  # type: ignore
+#   DEFAULT_BACKEND = "gcc"
+#   ALL_BACKEND.append("gcc")
+# except ImportError:
+#   core_gcc = None
 
-try:
-  from fpie import core_openmp  # type: ignore
-  DEFAULT_BACKEND = "openmp"
-  ALL_BACKEND.append("openmp")
-except ImportError:
-  core_openmp = None
+# try:
+#   from fpie import core_openmp  # type: ignore
+#   DEFAULT_BACKEND = "openmp"
+#   ALL_BACKEND.append("openmp")
+# except ImportError:
+#   core_openmp = None
 
-try:
-  from mpi4py import MPI
+# try:
+#   from mpi4py import MPI
 
-  from fpie import core_mpi  # type: ignore
-  ALL_BACKEND.append("mpi")
-except ImportError:
-  MPI = None  # type: ignore
-  core_mpi = None
+#   from fpie import core_mpi  # type: ignore
+#   ALL_BACKEND.append("mpi")
+# except ImportError:
+#   MPI = None  # type: ignore
+#   core_mpi = None
 
 try:
   from fpie import core_cuda  # type: ignore
