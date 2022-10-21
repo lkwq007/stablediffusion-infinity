@@ -6,7 +6,7 @@ Outpainting with Stable Diffusion on an infinite canvas.
 [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/lnyan/stablediffusion-infinity)
 [![Setup Locally](https://img.shields.io/badge/%F0%9F%96%A5%EF%B8%8F%20Setup-Locally-blue)](https://github.com/lkwq007/stablediffusion-infinity/blob/master/docs/setup_guide.md)
 
-Start with init_image (updated demo in Gradio):
+![outpaint](https://user-images.githubusercontent.com/1665437/197257616-82c1e58f-7463-4896-8345-6750a828c844.png)
 
 https://user-images.githubusercontent.com/1665437/197244111-51884b3b-dffe-4dcf-a82a-fa5117c79934.mp4
 
