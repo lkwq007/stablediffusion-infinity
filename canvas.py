@@ -255,9 +255,9 @@ class InfCanvas:
                     self.update_view_pos(int(xo), int(yo))
                     self.cached_view_pos=tuple(self.view_pos)
                     self.canvas[2].canvas.style.display="none"
-                    large_buffer=self.data2array(self.view_pos[0]-self.width//2,self.view_pos[1]-self.height//2,min(self.width*2,self.patch_size*2),min(self.height*2,self.patch_size*2))
-                    self.canvas[2].canvas.width=2*self.width
-                    self.canvas[2].canvas.height=2*self.height
+                    large_buffer=self.data2array(self.view_pos[0]-self.width//2,self.view_pos[1]-self.height//2,min(self.width*2,self.patch_size),min(self.height*2,self.patch_size))
+                    self.canvas[2].canvas.width=large_buffer.shape[1]
+                    self.canvas[2].canvas.height=large_buffer.shape[0]
                     # self.canvas[2].canvas.style.width=""
                     # self.canvas[2].canvas.style.height=""
                     self.canvas[2].put_image_data(large_buffer,0,0)

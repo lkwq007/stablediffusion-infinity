@@ -139,6 +139,7 @@ parser.add_argument("--host", type=str, help="host", dest="server_name")
 parser.add_argument("--share", action="store_true", help="share this app?")
 parser.add_argument("--debug", action="store_true", help="debug mode")
 parser.add_argument("--fp32", action="store_true", help="using full precision")
+parser.add_argument("--lowvram", action="store_true", help="using lowvram mode")
 parser.add_argument("--encrypt", action="store_true", help="using https?")
 parser.add_argument("--ssl_keyfile", type=str, help="path to ssl_keyfile")
 parser.add_argument("--ssl_certfile", type=str, help="path to ssl_certfile")
@@ -320,7 +321,7 @@ class StableDiffusionInpaint:
             total_memory = torch.cuda.get_device_properties(0).total_memory // (
                 1024 ** 3
             )
-            if total_memory <= 5:
+            if total_memory <= 5 or args.lowvram:
                 inpaint.enable_attention_slicing()
         except:
             pass
@@ -521,7 +522,7 @@ class StableDiffusion:
             total_memory = torch.cuda.get_device_properties(0).total_memory // (
                 1024 ** 3
             )
-            if total_memory <= 5:
+            if total_memory <= 5 or args.lowvram:
                 inpaint.enable_attention_slicing()
         except:
             pass
@@ -1015,6 +1016,7 @@ launch_kwargs = {k: v for k, v in launch_kwargs.items() if v is not None}
 launch_kwargs.pop("remote_model", None)
 launch_kwargs.pop("local_model", None)
 launch_kwargs.pop("fp32", None)
+launch_kwargs.pop("lowvram", None)
 launch_kwargs.update(launch_extra_kwargs)
 try:
     import google.colab
