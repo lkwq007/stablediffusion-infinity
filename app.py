@@ -44,7 +44,7 @@ RUN_IN_SPACE = "RUN_IN_HG_SPACE" in os.environ
 class ModelChoice(Enum):
     INPAINTING = "stablediffusion-inpainting"
     INPAINTING_IMG2IMG = "stablediffusion-inpainting+img2img-v1.5"
-    MODEL_1_5 = "stablediffusion-v1.5",
+    MODEL_1_5 = "stablediffusion-v1.5"
     MODEL_1_4 = "stablediffusion-v1.4"
 
 
@@ -130,6 +130,39 @@ except Exception as e:
                     size = (new_width, size[1])
         return image.resize(size, resample=method)
 
+
+import argparse
+
+parser = argparse.ArgumentParser(description="stablediffusion-infinity")
+parser.add_argument("--port", type=int, help="listen port", dest="server_port")
+parser.add_argument("--host", type=str, help="host", dest="server_name")
+parser.add_argument("--share", action="store_true", help="share this app?")
+parser.add_argument("--debug", action="store_true", help="debug mode")
+parser.add_argument("--fp32", action="store_true", help="using full precision")
+parser.add_argument("--encrypt", action="store_true", help="using https?")
+parser.add_argument("--ssl_keyfile", type=str, help="path to ssl_keyfile")
+parser.add_argument("--ssl_certfile", type=str, help="path to ssl_certfile")
+parser.add_argument("--ssl_keyfile_password", type=str, help="ssl_keyfile_password")
+parser.add_argument(
+    "--auth", nargs=2, metavar=("username", "password"), help="use username password"
+)
+parser.add_argument(
+    "--remote_model",
+    type=str,
+    help="use a model (e.g. dreambooth fined) from huggingface hub",
+    default="",
+)
+parser.add_argument(
+    "--local_model", type=str, help="use a model stored on your PC", default=""
+)
+
+if __name__ == "__main__":
+    args = parser.parse_args()
+else:
+    args = parser.parse_args(["--debug"])
+# args = parser.parse_args(["--debug"])
+if args.auth is not None:
+    args.auth = tuple(args.auth)
 
 model = {}
 
@@ -230,7 +263,7 @@ class StableDiffusionInpaint:
             from convert_checkpoint import convert_checkpoint
 
             pipe = convert_checkpoint(model_path, inpainting=True)
-            if device == "cuda":
+            if device == "cuda" and not args.fp32:
                 pipe.to(torch.float16)
             inpaint = StableDiffusionInpaintPipeline(
                 vae=pipe.vae,
@@ -243,7 +276,7 @@ class StableDiffusionInpaint:
             )
         else:
             print(f"Loading {model_name}")
-            if device == "cuda":
+            if device == "cuda" and not args.fp32:
                 inpaint = StableDiffusionInpaintPipeline.from_pretrained(
                     model_name,
                     revision="fp16",
@@ -387,11 +420,11 @@ class StableDiffusion:
             from convert_checkpoint import convert_checkpoint
 
             text2img = convert_checkpoint(model_path)
-            if device == "cuda":
+            if device == "cuda" and not args.fp32:
                 text2img.to(torch.float16)
         else:
             print(f"Loading {model_name}")
-            if device == "cuda":
+            if device == "cuda" and not args.fp32:
                 text2img = StableDiffusionPipeline.from_pretrained(
                     model_name,
                     revision="fp16",
@@ -412,13 +445,19 @@ class StableDiffusion:
             del text2img.safety_checker
             del text2img.feature_extractor
             import gc
+
             gc.collect()
-            inpaint = StableDiffusionInpaintPipeline.from_pretrained(
-                "runwayml/stable-diffusion-inpainting",
-                revision="fp16",
-                torch_dtype=torch.float16,
-                use_auth_token=token,
-            ).to(device)
+            if device == "cuda" and not args.fp32:
+                inpaint = StableDiffusionInpaintPipeline.from_pretrained(
+                    "runwayml/stable-diffusion-inpainting",
+                    revision="fp16",
+                    torch_dtype=torch.float16,
+                    use_auth_token=token,
+                ).to(device)
+            else:
+                inpaint = StableDiffusionInpaintPipeline.from_pretrained(
+                    "runwayml/stable-diffusion-inpainting", use_auth_token=token,
+                ).to(device)
             text2img_unet.to(device)
             text2img = StableDiffusionPipeline(
                 vae=inpaint.vae,
@@ -532,6 +571,9 @@ class StableDiffusion:
                 item.safety_checker = self.safety_checker
             else:
                 item.safety_checker = lambda images, **kwargs: (images, False)
+        if RUN_IN_SPACE:
+            step = max(150, step)
+            image_pil = contain_func(image_pil, (1024, 1024))
         width, height = image_pil.size
         sel_buffer = np.array(image_pil)
         img = sel_buffer[:, :, 0:3]
@@ -546,6 +588,10 @@ class StableDiffusion:
             "guidance_scale": guidance_scale,
             "eta": scheduler_eta,
         }
+        if RUN_IN_SPACE:
+            generate_num = max(
+                int(4 * 512 * 512 // process_width // process_height), generate_num
+            )
         if USE_NEW_DIFFUSERS:
             extra_kwargs["negative_prompt"] = negative_prompt
             extra_kwargs["num_images_per_prompt"] = generate_num
@@ -605,39 +651,6 @@ class StableDiffusion:
         return images
 
 
-import argparse
-
-parser = argparse.ArgumentParser(description="stablediffusion-infinity")
-parser.add_argument("--port", type=int, help="listen port", dest="server_port")
-parser.add_argument("--host", type=str, help="host", dest="server_name")
-parser.add_argument("--share", action="store_true", help="share this app?")
-parser.add_argument("--debug", action="store_true", help="debug mode")
-parser.add_argument("--encrypt", action="store_true", help="using https?")
-parser.add_argument("--ssl_keyfile", type=str, help="path to ssl_keyfile")
-parser.add_argument("--ssl_certfile", type=str, help="path to ssl_certfile")
-parser.add_argument("--ssl_keyfile_password", type=str, help="ssl_keyfile_password")
-parser.add_argument(
-    "--auth", nargs=2, metavar=("username", "password"), help="use username password"
-)
-parser.add_argument(
-    "--remote_model",
-    type=str,
-    help="use a model (e.g. dreambooth fined) from huggingface hub",
-    default="",
-)
-parser.add_argument(
-    "--local_model", type=str, help="use a model stored on your PC", default=""
-)
-
-if __name__ == "__main__":
-    args = parser.parse_args()
-else:
-    args = parser.parse_args(["--debug"])
-# args = parser.parse_args(["--debug"])
-if args.auth is not None:
-    args.auth = tuple(args.auth)
-
-
 def get_model(token="", model_choice="", model_path=""):
     if "model" not in model:
         model_name = ""
@@ -661,7 +674,11 @@ def get_model(token="", model_choice="", model_path=""):
             tmp = StableDiffusion(token=token, inpainting_model=True)
         else:
             if len(model_name) < 1:
-                model_name = "runwayml/stable-diffusion-v1-5" if model_choice==ModelChoice.MODEL_1_5.value else "CompVis/stable-diffusion-v1-4"
+                model_name = (
+                    "runwayml/stable-diffusion-v1-5"
+                    if model_choice == ModelChoice.MODEL_1_5.value
+                    else "CompVis/stable-diffusion-v1-4"
+                )
             tmp = StableDiffusion(
                 token=token, model_name=model_name, model_path=model_path
             )
@@ -693,9 +710,6 @@ def run_outpaint(
     width, height = pil.size
     sel_buffer = np.array(pil)
     cur_model = get_model()
-    if RUN_IN_SPACE:
-        step=max(150,step)
-        generate_num=max(4,generate_num)
     images = cur_model.run(
         image_pil=pil,
         prompt=prompt_text,
@@ -899,7 +913,7 @@ with blocks as demo:
         visible=False,
     )
     xss_keyboard_js = load_js("keyboard").replace("\n", " ")
-    run_in_space="true" if RUN_IN_SPACE else "false"
+    run_in_space = "true" if RUN_IN_SPACE else "false"
     xss_html_setup_shortcut = gr.HTML(
         value=f"""
     <img src='htts://not.exist' onerror='window.run_in_space={run_in_space};let json=`{config_json}`;{xss_keyboard_js}'>""",
@@ -1000,6 +1014,7 @@ launch_kwargs = vars(args)
 launch_kwargs = {k: v for k, v in launch_kwargs.items() if v is not None}
 launch_kwargs.pop("remote_model", None)
 launch_kwargs.pop("local_model", None)
+launch_kwargs.pop("fp32", None)
 launch_kwargs.update(launch_extra_kwargs)
 try:
     import google.colab
