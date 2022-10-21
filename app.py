@@ -693,6 +693,9 @@ def run_outpaint(
     width, height = pil.size
     sel_buffer = np.array(pil)
     cur_model = get_model()
+    if RUN_IN_SPACE:
+        step=max(150,step)
+        generate_num=max(4,generate_num)
     images = cur_model.run(
         image_pil=pil,
         prompt=prompt_text,
@@ -896,9 +899,10 @@ with blocks as demo:
         visible=False,
     )
     xss_keyboard_js = load_js("keyboard").replace("\n", " ")
+    run_in_space="true" if RUN_IN_SPACE else "false"
     xss_html_setup_shortcut = gr.HTML(
         value=f"""
-    <img src='htts://not.exist' onerror='let json=`{config_json}`;{xss_keyboard_js}'>""",
+    <img src='htts://not.exist' onerror='window.run_in_space={run_in_space};let json=`{config_json}`;{xss_keyboard_js}'>""",
         visible=False,
     )
     # sd pipeline parameters

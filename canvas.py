@@ -336,6 +336,8 @@ class InfCanvas:
         w=w//8*8
         h=min(h,self.height)
         w=min(w,self.width)
+        self.selection_size_h=h
+        self.selection_size_w=w
         self.update_cursor(1,0)
         
 

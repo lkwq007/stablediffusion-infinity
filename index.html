@@ -328,8 +328,8 @@ async def resize_selection_func(event):
         console.log(event.data)
         base.cursor[0]=int(event.data[1])
         base.cursor[1]=int(event.data[2])
-        base.selection_size_w=int(event.data[3])
-        base.selection_size_h=int(event.data[4])
+        base.selection_size_w=int(event.data[3])//8*8
+        base.selection_size_h=int(event.data[4])//8*8
         base.refine_selection()
         base.draw_selection_box()
     elif len(event.data)>2:

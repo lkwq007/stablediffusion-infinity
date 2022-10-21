@@ -197,6 +197,7 @@ var toolbar=new w2toolbar({
         // check_button("use_correction","Photometric Correction",false),
         check_button("resize_check","Resize Small Input",true),
         check_button("enable_safety","Enable Safety Checker",true),
+        check_button("square_selection","Square Selection Only",false),
         {type: "break"},
         check_button("use_seed","Use Seed:",false),
         { type: "html", id: "seed_val",
@@ -228,6 +229,11 @@ var toolbar=new w2toolbar({
                 this.enable("confirm","cancel_overlay","add_image","delete_image");
                 this.disable(...upload_button_lst);
                 query("#upload_file").click();
+                if(this.upload_tip)
+                {
+                    this.upload_tip=false;
+                    w2utils.notify("Note that only visible images will be added to canvas",{timeout:10000,where:query("#container")})
+                }
                 break;
             case "resize_selection":
                 this.resize_mode=true;
@@ -257,7 +263,10 @@ var toolbar=new w2toolbar({
                 {
                     this.enable(...resize_button_lst);
                     window.postMessage(["resize_selection","",""],"*");
-                    this.selection_box=this.selection_box_bak;
+                    if(event.target=="cancel_overlay")
+                    {
+                        this.selection_box=this.selection_box_bak;
+                    }
                 }
                 if(this.selection_box)
                 {
@@ -370,6 +379,7 @@ var toolbar=new w2toolbar({
             case "resize_check":
             case "enable_safety":
             case "use_seed":
+            case "square_selection":
                 let target=this.get(event.target);
                 target.icon=target.checked?"fa-regular fa-square":"fa-solid fa-square-check";
                 this.config_obj[event.target]=!target.checked;
@@ -379,6 +389,7 @@ var toolbar=new w2toolbar({
             case "save":
             case "export":
                 ask_filename(event.target);
+                break;
             default:
                 // clear, save, export, outpaint, retry
                 // break, save, export, accept, retry, outpaint
@@ -395,8 +406,10 @@ w2ui.toolbar.config_obj={
     enable_img2img: false,
     use_seed: false,
     seed_val: 0,
+    square_selection: false,
 };
 w2ui.toolbar.outpaint_tip=true;
+w2ui.toolbar.upload_tip=true;
 window.update_count=function(cur,total){
   w2ui.toolbar.sel_value=`${cur}/${total}`;
   w2ui.toolbar.refresh();
@@ -426,6 +439,12 @@ function onObjectScaled(e)
         height=Math.max(Math.min(height,window.overlay.height-object.top),256);
         let l=Math.max(Math.min(object.left,window.overlay.width-width-object.strokeWidth),0);
         let t=Math.max(Math.min(object.top,window.overlay.height-height-object.strokeWidth),0);
+        if(window.w2ui.toolbar.config_obj.square_selection)
+        {
+            let max_val = Math.max(width,height);
+            width=max_val;
+            height=max_val;
+        }
         object.set({ width: width, height: height, left:l,top:t})
         window.w2ui.toolbar.selection_box={width: width, height: height, x:object.left, y:object.top};
         window.w2ui.toolbar.setCount("resize_selection",`${Math.floor(width/8)*8}x${Math.floor(height/8)*8}`);
