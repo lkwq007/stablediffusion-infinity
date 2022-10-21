@@ -191,7 +191,7 @@ var toolbar=new w2toolbar({
         { type: "break" },
         { type: "button", id: "help", tooltip: "Help", icon: "fa-solid fa-circle-info" },
         { type: "new-line"},
-        { type: "button", id: "setting", tooltip: "Settings", icon: "fa-solid fa-sliders" },
+        { type: "button", id: "setting", text: "Canvas Setting", tooltip: "Resize Canvas Here", icon: "fa-solid fa-sliders" },
         { type: "break" },
         check_button("enable_img2img","Enable Img2Img",false),
         // check_button("use_correction","Photometric Correction",false),
@@ -302,6 +302,7 @@ var toolbar=new w2toolbar({
                 window.postMessage(["outpaint", "", event.target], "*");
                 break;
             case "outpaint":
+                this.click("selection");
                 this.disable(...outpaint_button_lst);
                 this.show(...outpaint_result_lst);
                 if(this.outpaint_tip)
@@ -441,7 +442,7 @@ function onObjectScaled(e)
         let t=Math.max(Math.min(object.top,window.overlay.height-height-object.strokeWidth),0);
         if(window.w2ui.toolbar.config_obj.square_selection)
         {
-            let max_val = Math.max(width,height);
+            let max_val = Math.min(Math.max(width,height),window.overlay.width,window.overlay.height);
             width=max_val;
             height=max_val;
         }
