@@ -99,9 +99,9 @@ open_setting = function() {
 }
 
 var button_lst=["clear", "load", "save", "export", "upload", "selection", "canvas", "eraser", "outpaint", "accept", "cancel", "retry", "prev", "current", "next", "eraser_size_btn", "eraser_size", "resize_selection", "scale", "zoom_in", "zoom_out", "help"];
-var upload_button_lst=['clear', 'load', 'save', "upload", 'export', 'outpaint', 'resize_selection', 'help'];
-var resize_button_lst=['clear', 'load', 'save', "upload", 'export', "selection", "canvas", "eraser", 'outpaint', 'resize_selection',"zoom_in", "zoom_out", 'help'];
-var outpaint_button_lst=['clear', 'load', 'save', "canvas", "eraser", "upload", 'export', 'resize_selection', "zoom_in", "zoom_out",'help'];
+var upload_button_lst=['clear', 'load', 'save', "upload", 'export', 'outpaint', 'resize_selection', 'help', "setting"];
+var resize_button_lst=['clear', 'load', 'save', "upload", 'export', "selection", "canvas", "eraser", 'outpaint', 'resize_selection',"zoom_in", "zoom_out", 'help', "setting"];
+var outpaint_button_lst=['clear', 'load', 'save', "canvas", "eraser", "upload", 'export', 'resize_selection', "zoom_in", "zoom_out",'help', "setting"];
 var outpaint_result_lst=["accept", "cancel", "retry", "prev", "current", "next"];
 var outpaint_result_func_lst=["accept", "retry", "prev", "current", "next"];
 
@@ -362,7 +362,7 @@ var toolbar=new w2toolbar({
             case "help":
                 w2popup.open({
                     title: "Document",
-                    body: "Usage: <a href='https://github.com/lkwq007/stablediffusion-infinity/blob/master/docs/setup_guide.md'  target='_blank'>https://github.com/lkwq007/stablediffusion-infinity/blob/master/docs/setup_guide.md</a>"
+                    body: "Usage: <a href='https://github.com/lkwq007/stablediffusion-infinity/blob/master/docs/usage.md'  target='_blank'>https://github.com/lkwq007/stablediffusion-infinity/blob/master/docs/usage.md</a>"
                 })
                 break;
             case "clear":
