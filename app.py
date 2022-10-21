@@ -196,7 +196,7 @@ def my_resize(width, height):
         return 512, 512
     smaller = min(width, height)
     larger = max(width, height)
-    if larger >= 768:
+    if larger >= 608:
         return width, height
     factor = 1
     if smaller < 290:
@@ -209,7 +209,7 @@ def my_resize(width, height):
         factor = 1.25
     elif smaller < 450:
         factor = 1.125
-    return int(factor * width), int(factor * height)
+    return int(factor * width)//8*8, int(factor * height)//8*8
 
 
 def load_learned_embed_in_clip(
@@ -775,7 +775,7 @@ proceed_button_js = load_js("proceed")
 setup_button_js = load_js("setup")
 
 if RUN_IN_SPACE:
-    get_model(token=os.environ.get("hftoken", ""))
+    get_model(token=os.environ.get("hftoken", ""), model_choice=ModelChoice.INPAINTING_IMG2IMG)
 
 blocks = gr.Blocks(
     title="StableDiffusion-Infinity",
