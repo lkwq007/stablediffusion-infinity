@@ -244,13 +244,20 @@ if "taichi" in correction_func.backend:
                 return img_inpainted
             base64_str_input = pil_to_base64(img_input)
             base64_str_inpainted = pil_to_base64(img_inpainted)
-            self.child.stdin.write(f"{base64_str_input},{base64_str_inpainted},{mode}\n".encode())
-            self.child.stdin.flush()
-            out = self.child.stdout.readline()
-            base64_str=out.decode().strip()
-            while base64_str and base64_str[0]=="[":
-                print(base64_str)
+            try:
+                if self.child.poll():
+                    self.child= Popen(["python", "postprocess.py"], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+                self.child.stdin.write(f"{base64_str_input},{base64_str_inpainted},{mode}\n".encode())
+                self.child.stdin.flush()
                 out = self.child.stdout.readline()
                 base64_str=out.decode().strip()
-            return base64_to_pil(base64_str)
+                while base64_str and base64_str[0]=="[":
+                    print(base64_str)
+                    out = self.child.stdout.readline()
+                    base64_str=out.decode().strip()
+                ret=base64_to_pil(base64_str)
+            except:
+                print("[PIE] not working, photometric correction is disabled")
+                ret=img_inpainted
+            return ret
     correction_func = SubprocessCorrection()

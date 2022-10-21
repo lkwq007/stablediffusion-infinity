@@ -730,7 +730,7 @@ def run_outpaint(
         height=height,
     )
     base64_str_lst = []
-    if use_correction != "disabled" and enable_img2img:
+    if enable_img2img:
         use_correction = "border_mode"
     for image in images:
         image = correction_func.run(pil.resize(image.size), image, mode=use_correction)
