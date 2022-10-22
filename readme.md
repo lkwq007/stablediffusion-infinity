@@ -35,6 +35,7 @@ Update: the project add photometric correction to suppress seams, to use this fe
 
 - The result is a black square: 
   - False positive rate of safety checker is relatively high, you may disable the safety_checker
+  - Some GPUs might not work with `fp16`: `python app.py --fp32 --lowvram`
 - What is the init_mode
   - init_mode indicates how to fill the empty/masked region, usually `patch_match` is better than others
 - Why not use `postMessage` for iframe interaction
