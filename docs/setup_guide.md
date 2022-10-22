@@ -24,7 +24,7 @@ conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
 conda install scipy scikit-image
 conda install -c conda-forge diffusers transformers ftfy
 pip install opencv-python
-pip install gradio==3.4.0
+pip install gradio==3.6
 pip install pytorch-lightning==1.7.7 einops==0.4.1 omegaconf==2.2.3
 ```
 
@@ -48,7 +48,7 @@ conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
 conda install scipy scikit-image
 conda install -c conda-forge diffusers transformers ftfy
 pip install opencv-python
-pip install gradio==3.4.0
+pip install gradio==3.6
 pip install pytorch-lightning==1.7.7 einops==0.4.1 omegaconf==2.2.3
 ```
 
@@ -69,7 +69,7 @@ conda install pytorch torchvision torchaudio -c pytorch-nightly
 conda install scipy scikit-image
 conda install -c conda-forge diffusers transformers ftfy
 pip install opencv-python
-pip install gradio==3.4.0
+pip install gradio==3.6
 pip install pytorch-lightning==1.7.7 einops==0.4.1 omegaconf==2.2.3
 ```
 
