@@ -88,6 +88,7 @@ from PIL import Image
 import io
 import time
 import base64
+from collections import deque
 import numpy as np
 from js import (
     console,
@@ -107,12 +108,37 @@ from js import (
     update_count,
     enable_result_lst,
     setup_shortcut,
+    update_undo_redo,
 )
 
 
 from canvas import InfCanvas
 
 
+class History:
+    def __init__(self,maxlen=10):
+        self.idx=-1
+        self.queue=deque([],maxlen=maxlen)
+
+    def undo(self):
+        ret = self.queue[self.idx]
+        if self.idx>-len(self.queue):
+            self.idx-=1
+        return ret, self.idx>-len(self.queue)
+
+    def redo(self):
+        if self.idx<-1:
+            self.idx+=1
+        return self.queue[self.idx], self.idx<-1
+
+    def append(self,state):
+        cnt=-1-self.idx
+        for i in range(cnt):
+            self.queue.pop()
+        self.idx=-1
+        self.queue.append(state)
+
+history = History()
 
 base_lst = [None]
 async def draw_canvas() -> None:
@@ -209,6 +235,29 @@ async def commit_func(event):
         base.write_selection_to_buffer()
         base.draw_buffer()
     base.canvas[2].clear()
+    if len(event.data)>2:
+        history.append(base.save())
+
+async def history_undo_func(event):
+    base=base_lst[0]
+    state,flag=history.undo()
+    if flag:
+        base.load(state)
+        update_undo_redo("redo",True)
+    update_undo_redo("undo",flag)
+    
+async def history_setup_func(event):
+    base=base_lst[0]
+    history.append(base.save())
+
+async def history_redo_func(event):
+    base=base_lst[0]
+    state,flag=history.redo()
+    if flag:
+        base.load(state)
+        update_undo_redo("undo",True)
+    update_undo_redo("redo",flag)
+
 
 async def transfer_func(event):
     base=base_lst[0]
@@ -238,6 +287,8 @@ async def upload_func(event):
     #base.buffer[yo:yo+h,xo:xo+w,0:3]=arr[:,:,0:3]
     #base.buffer[yo:yo+h,xo:xo+w,-1]=arr[:,:,-1]
     base.draw_buffer()
+    if len(event.data)>2:
+        history.append(base.save())
 
 async def setup_shortcut_func(event):
     setup_shortcut(event.data[1])
@@ -372,6 +423,12 @@ async def message_func(event):
             await zoom_in_func(event)
         elif event.data[1]=="zoom_out":
             await zoom_out_func(event)
+        elif event.data[1]=="redo":
+            await history_redo_func(event)
+        elif event.data[1]=="undo":
+            await history_undo_func(event)
+        elif event.data[1]=="history":
+            await history_setup_func()
     elif event.data[0]=="sync":
         await sync_func(event)
     elif event.data[0]=="load":

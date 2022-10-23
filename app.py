@@ -264,7 +264,7 @@ class StableDiffusionInpaint:
             else:
                 model_name = model_path
         vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse")
-        if not args.fp32:
+        if device == "cuda" and not args.fp32:
             vae.to(torch.float16)
         if original_checkpoint:
             print(f"Converting & Loading {model_path}")
@@ -432,7 +432,7 @@ class StableDiffusion:
             else:
                 model_name = model_path
         vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse")
-        if not args.fp32:
+        if device == "cuda" and not args.fp32:
             vae.to(torch.float16)
         if original_checkpoint:
             print(f"Converting & Loading {model_path}")
@@ -995,6 +995,10 @@ with blocks as demo:
             except Exception as e:
                 print(e)
                 return {token: gr.update(value=str(e))}
+            if model_choice in [ModelChoice.INPAINTING.value,ModelChoice.INPAINTING_IMG2IMG.value]:
+                init_val = "cv2_ns"
+            else:
+                init_val = "patchmatch"
             return {
                 token: gr.update(visible=False),
                 canvas_width: gr.update(visible=False),
@@ -1005,6 +1009,7 @@ with blocks as demo:
                 upload_button: gr.update(value="Upload Image"),
                 model_selection: gr.update(visible=False),
                 model_path_input: gr.update(visible=False),
+                init_mode: gr.update(value=init_val)
             }
 
         setup_button.click(
@@ -1027,6 +1032,7 @@ with blocks as demo:
                 upload_button,
                 model_selection,
                 model_path_input,
+                init_mode
             ],
             _js=setup_button_js,
         )

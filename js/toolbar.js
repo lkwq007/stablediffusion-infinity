@@ -101,7 +101,7 @@ open_setting = function() {
 var button_lst=["clear", "load", "save", "export", "upload", "selection", "canvas", "eraser", "outpaint", "accept", "cancel", "retry", "prev", "current", "next", "eraser_size_btn", "eraser_size", "resize_selection", "scale", "zoom_in", "zoom_out", "help"];
 var upload_button_lst=['clear', 'load', 'save', "upload", 'export', 'outpaint', 'resize_selection', 'help', "setting", "interrogate"];
 var resize_button_lst=['clear', 'load', 'save', "upload", 'export', "selection", "canvas", "eraser", 'outpaint', 'resize_selection',"zoom_in", "zoom_out", 'help', "setting", "interrogate"];
-var outpaint_button_lst=['clear', 'load', 'save', "canvas", "eraser", "upload", 'export', 'resize_selection', "zoom_in", "zoom_out",'help', "setting", "interrogate"];
+var outpaint_button_lst=['clear', 'load', 'save', "canvas", "eraser", "upload", 'export', 'resize_selection', "zoom_in", "zoom_out",'help', "setting", "interrogate", "undo", "redo"];
 var outpaint_result_lst=["accept", "cancel", "retry", "prev", "current", "next"];
 var outpaint_result_func_lst=["accept", "retry", "prev", "current", "next"];
 
@@ -130,11 +130,11 @@ var toolbar=new w2toolbar({
         { type: "button", id: "outpaint", text: "Outpaint", tooltip: "Run Outpainting", icon: "fa-solid fa-brush" },
         { type: "button", id: "interrogate", text: "Interrogate", tooltip: "Get a prompt with Clip Interrogator ", icon: "fa-solid fa-magnifying-glass" },
         { type: "break" },
-        { type: "button", id: "accept", text: "Accept", tooltip: "Accept current result", icon: "fa-solid fa-check", hidden: true, disable:true,},
+        { type: "button", id: "accept", text: "Accept", tooltip: "Accept current result", icon: "fa-solid fa-check", hidden: true, disabled:true,},
         { type: "button", id: "cancel", text: "Cancel", tooltip: "Cancel current outpainting/error", icon: "fa-solid fa-ban", hidden: true},
-        { type: "button", id: "retry", text: "Retry", tooltip: "Retry", icon: "fa-solid fa-rotate", hidden: true, disable:true,},
-        { type: "button", id: "prev", tooltip: "Prev Result", icon: "fa-solid fa-caret-left", hidden: true, disable:true,},
-        { type: "html", id: "current", hidden: true, disable:true,
+        { type: "button", id: "retry", text: "Retry", tooltip: "Retry", icon: "fa-solid fa-rotate", hidden: true, disabled:true,},
+        { type: "button", id: "prev", tooltip: "Prev Result", icon: "fa-solid fa-caret-left", hidden: true, disabled:true,},
+        { type: "html", id: "current", hidden: true, disabled:true,
             async onRefresh(event) {
                 await event.complete
                 let fragment = query.html(`
@@ -145,11 +145,11 @@ var toolbar=new w2toolbar({
                 query(this.box).find("#tb_toolbar_item_current").append(fragment)
             }
         },
-        { type: "button", id: "next", tooltip: "Next Result", icon: "fa-solid fa-caret-right", hidden: true,disable:true,},
-        { type: "button", id: "add_image", text: "Add Image", icon: "fa-solid fa-file-circle-plus", hidden: true,disable:true,},
-        { type: "button", id: "delete_image", text: "Delete Image", icon: "fa-solid fa-trash-can", hidden: true,disable:true,},
-        { type: "button", id: "confirm", text: "Confirm", icon: "fa-solid fa-check", hidden: true,disable:true,},
-        { type: "button", id: "cancel_overlay", text: "Cancel", icon: "fa-solid fa-ban", hidden: true,disable:true,},
+        { type: "button", id: "next", tooltip: "Next Result", icon: "fa-solid fa-caret-right", hidden: true,disabled:true,},
+        { type: "button", id: "add_image", text: "Add Image", icon: "fa-solid fa-file-circle-plus", hidden: true,disabled:true,},
+        { type: "button", id: "delete_image", text: "Delete Image", icon: "fa-solid fa-trash-can", hidden: true,disabled:true,},
+        { type: "button", id: "confirm", text: "Confirm", icon: "fa-solid fa-check", hidden: true,disabled:true,},
+        { type: "button", id: "cancel_overlay", text: "Cancel", icon: "fa-solid fa-ban", hidden: true,disabled:true,},
         { type: "break" },
         { type: "spacer" },
         { type: "break" },
@@ -193,6 +193,10 @@ var toolbar=new w2toolbar({
         { type: "button", id: "help", tooltip: "Help", icon: "fa-solid fa-circle-info" },
         { type: "new-line"},
         { type: "button", id: "setting", text: "Canvas Setting", tooltip: "Resize Canvas Here", icon: "fa-solid fa-sliders" },
+        { type: "break" },
+        // check_button("enable_history","Enable History:",false, "Enable Canvas History"),
+        { type: "button", id: "undo", tooltip: "Undo last erasing/last outpainting", icon: "fa-solid fa-rotate-left", disabled: true, hidden: true},
+        { type: "button", id: "redo", tooltip: "Redo", icon: "fa-solid fa-rotate-right", disabled: true, hidden: true},
         { type: "break" },
         check_button("enable_img2img","Enable Img2Img",false),
         // check_button("use_correction","Photometric Correction",false),
@@ -313,7 +317,7 @@ var toolbar=new w2toolbar({
                 if(this.outpaint_tip)
                 {
                     this.outpaint_tip=false;
-                    w2utils.notify("The canvas stays locked until you accept/cancel current outpainting",{timeout:10000,where:query("#container")})
+                    w2utils.notify("The canvas stays locked until you accept/cancel current outpainting. You can modify the 'sample number' to get multiple results; you can resize the canvas/selection with 'canvas setting'/'resize selection'; you can use 'photometric correction' to help preserve existing contents",{timeout:15000,where:query("#container")})
                 }
                 document.querySelector("#container").style.pointerEvents="none";
             case "retry":
@@ -322,6 +326,11 @@ var toolbar=new w2toolbar({
                 window.postMessage(["transfer",""],"*")
                 break;
             case "interrogate":
+                if(this.interrogate_tip)
+                {
+                    this.interrogate_tip=false;
+                    w2utils.notify("ClipInterrogator v1 will be dynamically loaded when run at the first time, which may take a while",{timeout:10000,where:query("#container")})
+                }
                 parent.config_obj["interrogate_mode"]=true;
                 window.postMessage(["transfer",""],"*")
                 break
@@ -331,7 +340,16 @@ var toolbar=new w2toolbar({
                 this.disable(...outpaint_result_func_lst);
                 this.enable(...outpaint_button_lst);
                 document.querySelector("#container").style.pointerEvents="auto";
-                window.postMessage(["click", event.target],"*");
+                if(this.config_obj.enable_history)
+                {
+                    window.postMessage(["click", event.target, ""],"*");
+                    this.enable("undo");
+                    this.disable("redo");
+                }
+                else
+                {
+                    window.postMessage(["click", event.target],"*");
+                }
                 let app=parent.document.querySelector("gradio-app");
                 app=app.shadowRoot??app;
                 app.querySelector("#cancel").click();
@@ -385,13 +403,19 @@ var toolbar=new w2toolbar({
                 parent.config_obj=this.config_obj;
                 this.refresh();
                 break;
+            case "enable_history":
+                let target=this.get(event.target);
+                if(!target.checked)
+                {
+                    w2utils.notify("Enable canvas history might increase resource usage / slow down the canvas ", {error:true,timeout:3000,where:query("#container")})
+                    window.postMessage(["click","history"],"*");
+                }
             case "enable_img2img":
             case "use_correction":
             case "resize_check":
             case "enable_safety":
             case "use_seed":
             case "square_selection":
-                let target=this.get(event.target);
                 target.icon=target.checked?"fa-regular fa-square":"fa-solid fa-square-check";
                 this.config_obj[event.target]=!target.checked;
                 parent.config_obj=this.config_obj;
@@ -418,9 +442,11 @@ w2ui.toolbar.config_obj={
     use_seed: false,
     seed_val: 0,
     square_selection: false,
+    enable_history: false,
 };
 w2ui.toolbar.outpaint_tip=true;
 w2ui.toolbar.upload_tip=true;
+w2ui.toolbar.interrogate_tip=true;
 window.update_count=function(cur,total){
   w2ui.toolbar.sel_value=`${cur}/${total}`;
   w2ui.toolbar.refresh();
@@ -535,7 +561,16 @@ function export_image()
 {
     data=window.overlay.toDataURL();
     document.querySelector("#upload_content").value=data;
-    window.postMessage(["upload",""],"*");
+    if(window.w2ui.toolbar.config_obj.enable_history)
+    {
+        window.postMessage(["upload","",""],"*");
+        window.w2ui.toolbar.enable("undo");
+        window.w2ui.toolbar.disable("redo");
+    }
+    else
+    {
+        window.postMessage(["upload",""],"*");
+    }
     end_overlay();
 }
 function end_overlay()
@@ -588,4 +623,17 @@ window.setup_shortcut=function(json)
             }
         }
     })
+}
+
+window.update_undo_redo=function(target,flag)
+{
+    let lst=["undo","redo"];
+    if(flag)
+    {
+        w2ui.toolbar.enable(target);
+    }
+    else
+    {
+        w2ui.toolbar.disable(target);
+    }
 }
