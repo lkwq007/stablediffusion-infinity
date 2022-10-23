@@ -79,9 +79,10 @@ finally:
     else:
         device = "cpu"
 
-import contextlib
+if device != "cuda":
+    import contextlib
 
-autocast = contextlib.nullcontext
+    autocast = contextlib.nullcontext
 
 with open("config.yaml", "r") as yaml_in:
     yaml_object = yaml.safe_load(yaml_in)
