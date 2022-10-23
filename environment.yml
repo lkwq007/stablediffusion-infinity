@@ -323,6 +323,7 @@ dependencies:
     - tensorboard==2.10.1
     - tensorboard-data-server==0.6.1
     - tensorboard-plugin-wit==1.8.1
+    - timm==0.6.11
     - torchmetrics==0.9.3
     - uc-micro-py==1.0.1
     - uvicorn==0.18.3

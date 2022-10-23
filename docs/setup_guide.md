@@ -26,6 +26,7 @@ conda install -c conda-forge diffusers transformers ftfy
 pip install opencv-python
 pip install gradio==3.6
 pip install pytorch-lightning==1.7.7 einops==0.4.1 omegaconf==2.2.3
+pip install timm
 ```
 
 After setup the environment, you can run stablediffusion-infinity with following commands:
@@ -50,6 +51,7 @@ conda install -c conda-forge diffusers transformers ftfy
 pip install opencv-python
 pip install gradio==3.6
 pip install pytorch-lightning==1.7.7 einops==0.4.1 omegaconf==2.2.3
+pip install timm
 ```
 
 For windows, you may need to replace `pip install opencv-python` with `conda install -c conda-forge opencv`
@@ -71,6 +73,7 @@ conda install -c conda-forge diffusers transformers ftfy
 pip install opencv-python
 pip install gradio==3.6
 pip install pytorch-lightning==1.7.7 einops==0.4.1 omegaconf==2.2.3
+pip install timm
 ```
 
 After setup the environment, you can run stablediffusion-infinity with following commands:
