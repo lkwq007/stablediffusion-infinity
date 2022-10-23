@@ -93,8 +93,8 @@ def edge_pad(img, mask, mode=1):
 
 
 def perlin_noise(img, mask):
-    lin_x = np.linspace(0, 5, mask.shape[0], endpoint=False)
-    lin_y = np.linspace(0, 5, mask.shape[1], endpoint=False)
+    lin_x = np.linspace(0, 5, mask.shape[1], endpoint=False)
+    lin_y = np.linspace(0, 5, mask.shape[0], endpoint=False)
     x, y = np.meshgrid(lin_x, lin_y)
     avg = img.mean(axis=0).mean(axis=0)
     # noise=[((perlin(x, y)+1)*128+avg[i]).astype(np.uint8) for i in range(3)]
