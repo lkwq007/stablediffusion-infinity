@@ -118,25 +118,31 @@ from canvas import InfCanvas
 class History:
     def __init__(self,maxlen=10):
         self.idx=-1
-        self.queue=deque([],maxlen=maxlen)
+        self.undo_lst=deque([],maxlen=maxlen)
+        self.redo_lst=deque([],maxlen=maxlen)
+        self.state=None
 
     def undo(self):
-        ret = self.queue[self.idx]
-        if self.idx>-len(self.queue):
-            self.idx-=1
-        return ret, self.idx>-len(self.queue)
-
+        cur=None
+        if len(self.undo_lst):
+            cur=self.undo_lst.pop()
+            self.redo_lst.appendleft(cur)
+        return cur
     def redo(self):
-        if self.idx<-1:
-            self.idx+=1
-        return self.queue[self.idx], self.idx<-1
+        cur=None
+        if len(self.redo_lst):
+            cur=self.redo_lst.popleft()
+            self.undo_lst.append(cur)
+        return cur
 
-    def append(self,state):
-        cnt=-1-self.idx
-        for i in range(cnt):
-            self.queue.pop()
-        self.idx=-1
-        self.queue.append(state)
+    def check(self):
+        return len(self.undo_lst)>0,len(self.redo_lst)>0
+
+    def append(self,state,update=True):
+        self.redo_lst.clear()
+        self.undo_lst.append(state)
+        if update:
+            update_undo_redo(*self.check())
 
 history = History()
 
@@ -240,23 +246,31 @@ async def commit_func(event):
 
 async def history_undo_func(event):
     base=base_lst[0]
-    state,flag=history.undo()
-    if flag:
+    if base.buffer_dirty or len(history.redo_lst)>0:
+        state=history.undo()
+    else:
+        history.undo()
+        state=history.undo()
+    if state is not None:
         base.load(state)
-        update_undo_redo("redo",True)
-    update_undo_redo("undo",flag)
+    update_undo_redo(*history.check())
     
 async def history_setup_func(event):
     base=base_lst[0]
-    history.append(base.save())
+    history.undo_lst.clear()
+    history.redo_lst.clear()
+    history.append(base.save(),update=False)
 
 async def history_redo_func(event):
     base=base_lst[0]
-    state,flag=history.redo()
-    if flag:
+    if len(history.undo_lst)>0:
+        state=history.redo()
+    else:
+        history.redo()
+        state=history.redo()
+    if state is not None:
         base.load(state)
-        update_undo_redo("undo",True)
-    update_undo_redo("redo",flag)
+    update_undo_redo(*history.check())
 
 
 async def transfer_func(event):
@@ -428,7 +442,7 @@ async def message_func(event):
         elif event.data[1]=="undo":
             await history_undo_func(event)
         elif event.data[1]=="history":
-            await history_setup_func()
+            await history_setup_func(event)
     elif event.data[0]=="sync":
         await sync_func(event)
     elif event.data[0]=="load":

@@ -194,9 +194,9 @@ var toolbar=new w2toolbar({
         { type: "new-line"},
         { type: "button", id: "setting", text: "Canvas Setting", tooltip: "Resize Canvas Here", icon: "fa-solid fa-sliders" },
         { type: "break" },
-        // check_button("enable_history","Enable History:",false, "Enable Canvas History"),
-        { type: "button", id: "undo", tooltip: "Undo last erasing/last outpainting", icon: "fa-solid fa-rotate-left", disabled: true, hidden: true},
-        { type: "button", id: "redo", tooltip: "Redo", icon: "fa-solid fa-rotate-right", disabled: true, hidden: true},
+        check_button("enable_history","Enable History:",false, "Enable Canvas History"),
+        { type: "button", id: "undo", tooltip: "Undo last erasing/last outpainting", icon: "fa-solid fa-rotate-left", disabled: true },
+        { type: "button", id: "redo", tooltip: "Redo", icon: "fa-solid fa-rotate-right", disabled: true },
         { type: "break" },
         check_button("enable_img2img","Enable Img2Img",false),
         // check_button("use_correction","Photometric Correction",false),
@@ -233,6 +233,7 @@ var toolbar=new w2toolbar({
                 this.show("confirm","cancel_overlay","add_image","delete_image");
                 this.enable("confirm","cancel_overlay","add_image","delete_image");
                 this.disable(...upload_button_lst);
+                this.disable("undo","redo")
                 query("#upload_file").click();
                 if(this.upload_tip)
                 {
@@ -285,6 +286,7 @@ var toolbar=new w2toolbar({
                 this.upload_mode=false;
                 this.resize_mode=false;
                 this.click("selection");
+                window.update_undo_redo(window.undo_redo_state.undo, window.undo_redo_state.redo);
                 break;
             case "add_image":
                 query("#upload_file").click();
@@ -314,6 +316,7 @@ var toolbar=new w2toolbar({
                 this.click("selection");
                 this.disable(...outpaint_button_lst);
                 this.show(...outpaint_result_lst);
+                this.disable("undo","redo");
                 if(this.outpaint_tip)
                 {
                     this.outpaint_tip=false;
@@ -343,8 +346,6 @@ var toolbar=new w2toolbar({
                 if(this.config_obj.enable_history)
                 {
                     window.postMessage(["click", event.target, ""],"*");
-                    this.enable("undo");
-                    this.disable("redo");
                 }
                 else
                 {
@@ -353,6 +354,7 @@ var toolbar=new w2toolbar({
                 let app=parent.document.querySelector("gradio-app");
                 app=app.shadowRoot??app;
                 app.querySelector("#cancel").click();
+                window.update_undo_redo(window.undo_redo_state.undo, window.undo_redo_state.redo);
                 break;
             case "eraser":
             case "selection":
@@ -409,6 +411,12 @@ var toolbar=new w2toolbar({
                 {
                     w2utils.notify("Enable canvas history might increase resource usage / slow down the canvas ", {error:true,timeout:3000,where:query("#container")})
                     window.postMessage(["click","history"],"*");
+                }
+                else
+                {
+                    window.undo_redo_state.undo=false;
+                    window.undo_redo_state.redo=false;
+                    this.disable("undo","redo");
                 }
             case "enable_img2img":
             case "use_correction":
@@ -624,16 +632,25 @@ window.setup_shortcut=function(json)
         }
     })
 }
-
-window.update_undo_redo=function(target,flag)
+window.undo_redo_state={undo:false,redo:false};
+window.update_undo_redo=function(s0,s1)
 {
-    let lst=["undo","redo"];
-    if(flag)
+    if(s0)
     {
-        w2ui.toolbar.enable(target);
+        w2ui.toolbar.enable("undo");
     }
     else
     {
-        w2ui.toolbar.disable(target);
+        w2ui.toolbar.disable("undo");
     }
+    if(s1)
+    {
+        w2ui.toolbar.enable("redo");
+    }
+    else
+    {
+        w2ui.toolbar.disable("redo");
+    }
+    window.undo_redo_state.undo=s0;
+    window.undo_redo_state.redo=s1;
 }
