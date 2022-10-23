@@ -406,24 +406,27 @@ var toolbar=new w2toolbar({
                 this.refresh();
                 break;
             case "enable_history":
-                let target=this.get(event.target);
-                if(!target.checked)
-                {
-                    w2utils.notify("Enable canvas history might increase resource usage / slow down the canvas ", {error:true,timeout:3000,where:query("#container")})
-                    window.postMessage(["click","history"],"*");
-                }
-                else
-                {
-                    window.undo_redo_state.undo=false;
-                    window.undo_redo_state.redo=false;
-                    this.disable("undo","redo");
-                }
             case "enable_img2img":
             case "use_correction":
             case "resize_check":
             case "enable_safety":
             case "use_seed":
             case "square_selection":
+                let target=this.get(event.target);
+                if(event.target=="enable_history")
+                {
+                    if(!target.checked)
+                    {
+                        w2utils.notify("Enable canvas history might increase resource usage / slow down the canvas ", {error:true,timeout:3000,where:query("#container")})
+                        window.postMessage(["click","history"],"*");
+                    }
+                    else
+                    {
+                        window.undo_redo_state.undo=false;
+                        window.undo_redo_state.redo=false;
+                        this.disable("undo","redo");
+                    }
+                }
                 target.icon=target.checked?"fa-regular fa-square":"fa-solid fa-square-check";
                 this.config_obj[event.target]=!target.checked;
                 parent.config_obj=this.config_obj;
