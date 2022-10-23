@@ -19,6 +19,7 @@ from diffusers import (
     DDIMScheduler,
     LMSDiscreteScheduler,
 )
+from diffusers.models import AutoencoderKL
 from PIL import Image
 from PIL import ImageOps
 import gradio as gr
@@ -74,10 +75,8 @@ finally:
     else:
         device = "cpu"
 
-if device != "cuda":
-    import contextlib
-
-    autocast = contextlib.nullcontext
+import contextlib
+autocast = contextlib.nullcontext
 
 with open("config.yaml", "r") as yaml_in:
     yaml_object = yaml.safe_load(yaml_in)
@@ -260,6 +259,9 @@ class StableDiffusionInpaint:
                 model_name = os.path.dirname(model_path)
             else:
                 model_name = model_path
+        vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse")
+        if not args.fp32:
+            vae.to(torch.float16)
         if original_checkpoint:
             print(f"Converting & Loading {model_path}")
             from convert_checkpoint import convert_checkpoint
@@ -268,7 +270,7 @@ class StableDiffusionInpaint:
             if device == "cuda" and not args.fp32:
                 pipe.to(torch.float16)
             inpaint = StableDiffusionInpaintPipeline(
-                vae=pipe.vae,
+                vae=vae,
                 text_encoder=pipe.text_encoder,
                 tokenizer=pipe.tokenizer,
                 unet=pipe.unet,
@@ -284,10 +286,11 @@ class StableDiffusionInpaint:
                     revision="fp16",
                     torch_dtype=torch.float16,
                     use_auth_token=token,
+                    vae=vae
                 )
             else:
                 inpaint = StableDiffusionInpaintPipeline.from_pretrained(
-                    model_name, use_auth_token=token,
+                    model_name, use_auth_token=token, vae=vae
                 )
         if os.path.exists("./embeddings"):
             print("Note that StableDiffusionInpaintPipeline + embeddings is untested")
@@ -387,7 +390,7 @@ class StableDiffusionInpaint:
             init_image = Image.fromarray(img)
             mask_image = Image.fromarray(mask)
             # mask_image=mask_image.filter(ImageFilter.GaussianBlur(radius = 8))
-            with autocast("cuda"):
+            if True:
                 images = inpaint_func(
                     prompt=prompt,
                     image=init_image.resize(
@@ -419,13 +422,25 @@ class StableDiffusion:
                 model_name = os.path.dirname(model_path)
             else:
                 model_name = model_path
+        vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse")
+        if not args.fp32:
+            vae.to(torch.float16)
         if original_checkpoint:
             print(f"Converting & Loading {model_path}")
             from convert_checkpoint import convert_checkpoint
 
-            text2img = convert_checkpoint(model_path)
+            pipe = convert_checkpoint(model_path)
             if device == "cuda" and not args.fp32:
-                text2img.to(torch.float16)
+                pipe.to(torch.float16)
+            text2img = StableDiffusionInpaintPipeline(
+                vae=vae,
+                text_encoder=pipe.text_encoder,
+                tokenizer=pipe.tokenizer,
+                unet=pipe.unet,
+                scheduler=pipe.scheduler,
+                safety_checker=pipe.safety_checker,
+                feature_extractor=pipe.feature_extractor,
+            )
         else:
             print(f"Loading {model_name}")
             if device == "cuda" and not args.fp32:
@@ -434,10 +449,11 @@ class StableDiffusion:
                     revision="fp16",
                     torch_dtype=torch.float16,
                     use_auth_token=token,
+                    vae = vae
                 )
             else:
                 text2img = StableDiffusionPipeline.from_pretrained(
-                    model_name, use_auth_token=token,
+                    model_name, use_auth_token=token, vae=vae
                 )
         if inpainting_model:
             # can reduce vRAM by reusing models except unet
@@ -457,10 +473,11 @@ class StableDiffusion:
                     revision="fp16",
                     torch_dtype=torch.float16,
                     use_auth_token=token,
+                    vae=vae
                 ).to(device)
             else:
                 inpaint = StableDiffusionInpaintPipeline.from_pretrained(
-                    "runwayml/stable-diffusion-inpainting", use_auth_token=token,
+                    "runwayml/stable-diffusion-inpainting", use_auth_token=token, vae=vae
                 ).to(device)
             text2img_unet.to(device)
             text2img = StableDiffusionPipeline(
@@ -604,7 +621,7 @@ class StableDiffusion:
             extra_kwargs["generator"] = generator
         if nmask.sum() < 1 and enable_img2img:
             init_image = Image.fromarray(img)
-            with autocast("cuda"):
+            if True:
                 images = img2img(
                     prompt=prompt,
                     init_image=init_image.resize(
@@ -631,7 +648,7 @@ class StableDiffusion:
             init_image = Image.fromarray(img)
             mask_image = Image.fromarray(mask)
             # mask_image=mask_image.filter(ImageFilter.GaussianBlur(radius = 8))
-            with autocast("cuda"):
+            if True:
                 input_image = init_image.resize(
                     (process_width, process_height), resample=SAMPLING_MODE
                 )
@@ -645,7 +662,7 @@ class StableDiffusion:
                     **extra_kwargs,
                 )["images"]
         else:
-            with autocast("cuda"):
+            if True:
                 images = text2img(
                     prompt=prompt,
                     height=process_width,
