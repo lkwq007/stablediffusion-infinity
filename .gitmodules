@@ -7,3 +7,6 @@
 [submodule "sd_grpcserver"]
 	path = sd_grpcserver
 	url = https://github.com/lkwq007/sd_grpcserver.git
+[submodule "blip_model"]
+	path = blip_model
+	url = https://github.com/lkwq007/blip_model
