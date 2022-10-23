@@ -27,5 +27,6 @@ window.config_obj={
     enable_img2img: false,
     use_seed: false,
     seed_val: 0,
+    interrogate_mode: false,
 };
 setup_outpaint();

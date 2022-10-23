@@ -29,6 +29,7 @@ import skimage.measure
 import yaml
 import json
 from enum import Enum
+from utils import *
 
 try:
     abspath = os.path.abspath(__file__)
@@ -37,7 +38,10 @@ try:
 except:
     pass
 
-from utils import *
+try:
+    from interrogate import Interrogator
+except:
+    Interrogator = DummyInterrogator
 
 USE_NEW_DIFFUSERS = True
 RUN_IN_SPACE = "RUN_IN_HG_SPACE" in os.environ
@@ -729,10 +733,19 @@ def run_outpaint(
     generate_num,
     scheduler,
     scheduler_eta,
+    interrogate_mode,
     state,
 ):
     data = base64.b64decode(str(sel_buffer_str))
     pil = Image.open(io.BytesIO(data))
+    if interrogate_mode:
+        interrogator = model.setdefault("interrogator",Interrogator())
+        interrogate_ret = interrogator.interrogate(pil)
+        return (
+            gr.update(value=",".join([sel_buffer_str]),),
+            gr.update(label="Prompt",value=interrogate_ret),
+            state,
+        )
     width, height = pil.size
     sel_buffer = np.array(pil)
     cur_model = get_model()
@@ -952,6 +965,7 @@ with blocks as demo:
     sd_img2img = gr.Checkbox(label="Enable Img2Img", value=False, visible=False)
     sd_resize = gr.Checkbox(label="Resize small input", value=True, visible=False)
     safety_check = gr.Checkbox(label="Enable Safety Checker", value=True, visible=False)
+    interrogate_check = gr.Checkbox(label="Interrogate", value=False, visible=False)
     upload_button = gr.Button(
         "Before uploading the image you need to setup the canvas first", visible=False
     )
@@ -1026,6 +1040,7 @@ with blocks as demo:
             sd_generate_num,
             sd_scheduler,
             sd_scheduler_eta,
+            interrogate_check,
             model_output_state,
         ],
         outputs=[model_output, sd_prompt, model_output_state],

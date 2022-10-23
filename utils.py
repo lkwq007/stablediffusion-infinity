@@ -221,6 +221,12 @@ except Exception as e:
             return b
     correction_func=DummyCorrection()
 
+class DummyInterrogator:
+    def __init__(self) -> None:
+        pass
+    def interrogate(self,pil):
+        return "Interrogator init failed"
+
 if "taichi" in correction_func.backend:
     import sys
     import io

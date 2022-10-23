@@ -66,7 +66,10 @@ def rank(text_features, image_features, text_array, top_count=1):
 class Interrogator:
     def __init__(self) -> None:
         self.tokenizer = CLIPTokenizer.from_pretrained(clip_name)
-        self.blip_model = None
+        try:
+            self.get_blip()
+        except:
+            self.blip_model = None
         self.model = CLIPModel.from_pretrained(clip_name)
         self.processor = CLIPProcessor.from_pretrained(clip_name)
         self.text_feature_lst = [torch.load(os.path.join(data_path, f"{i}.pth")) for i in range(5)]
@@ -78,9 +81,7 @@ class Interrogator:
 
 
     def interrogate(self,image,use_caption=False):
-        if use_caption:
-            if self.blip_model is None:
-                self.get_blip()
+        if self.blip_model:
             caption = generate_caption(self.blip_model, image)
         else:
             caption = ""

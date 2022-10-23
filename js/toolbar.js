@@ -251,6 +251,10 @@ var toolbar=new w2toolbar({
                 else
                 {
                     let sel_box=this.selection_box;
+                    if(sel_box.width*sel_box.height>512*512)
+                    {
+                        w2utils.notify("Note that the outpainting will be much slower when the area of selection is larger than 512x512",{timeout:2000,where:query("#container")})
+                    }
                     window.postMessage(["resize_selection",sel_box.x,sel_box.y,sel_box.width,sel_box.height],"*");
                 }
             case "cancel_overlay":
@@ -313,8 +317,13 @@ var toolbar=new w2toolbar({
                 document.querySelector("#container").style.pointerEvents="none";
             case "retry":
                 this.disable(...outpaint_result_func_lst);
+                parent.config_obj["interrogate_mode"]=false;
                 window.postMessage(["transfer",""],"*")
                 break;
+            case "interrogate":
+                parent.config_obj["interrogate_mode"]=true;
+                window.postMessage(["transfer",""],"*")
+                break
             case "accept":
             case "cancel":
                 this.hide(...outpaint_result_lst);
