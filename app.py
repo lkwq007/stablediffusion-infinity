@@ -381,10 +381,15 @@ class StableDiffusionInpaint:
             generator = torch.Generator(inpaint.device).manual_seed(seed_val)
             extra_kwargs["generator"] = generator
         if True:
-            img, mask = functbl[fill_mode](img, mask)
-            mask = 255 - mask
-            mask = skimage.measure.block_reduce(mask, (8, 8), np.max)
-            mask = mask.repeat(8, axis=0).repeat(8, axis=1)
+            if fill_mode == "g_diffuser":
+                mask = 255 - mask
+                mask = mask[:, :, np.newaxis].repeat(3, axis=2)
+                img, mask = functbl[fill_mode](img, mask)
+            else:
+                img, mask = functbl[fill_mode](img, mask)
+                mask = 255 - mask
+                mask = skimage.measure.block_reduce(mask, (8, 8), np.max)
+                mask = mask.repeat(8, axis=0).repeat(8, axis=1)
             extra_kwargs["strength"] = strength
             inpaint_func = inpaint
             init_image = Image.fromarray(img)
