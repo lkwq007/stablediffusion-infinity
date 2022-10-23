@@ -739,7 +739,17 @@ def run_outpaint(
     data = base64.b64decode(str(sel_buffer_str))
     pil = Image.open(io.BytesIO(data))
     if interrogate_mode:
-        interrogator = model.setdefault("interrogator",Interrogator())
+        if "interrogator" not in model:
+            model["interrogator"]=Interrogator()
+        interrogator = model["interrogator"]
+        img=np.array(pil)[:,:,0:3]
+        mask=np.array(pil)[:,:,-1]
+        x, y = np.nonzero(mask)
+        if len(x)>0:
+            x0, x1 = x.min(), x.max() + 1
+            y0, y1 = y.min(), y.max() + 1
+            img=img[x0:x1,y0:y1,:]
+        pil=Image.fromarray(img)
         interrogate_ret = interrogator.interrogate(pil)
         return (
             gr.update(value=",".join([sel_buffer_str]),),
