@@ -7,6 +7,9 @@ import numpy as np
 import torch
 from torch import autocast
 import diffusers
+
+assert diffusers.__version__ >= "0.6.0", "Please upgrade diffusers to 0.6.0"
+
 from diffusers.configuration_utils import FrozenDict
 from diffusers import (
     StableDiffusionPipeline,
@@ -34,8 +37,6 @@ except:
     pass
 
 from utils import *
-
-assert diffusers.__version__ >= "0.6.0", "Please upgrade diffusers to 0.6.0"
 
 USE_NEW_DIFFUSERS = True
 RUN_IN_SPACE = "RUN_IN_HG_SPACE" in os.environ
@@ -210,7 +211,7 @@ def my_resize(width, height):
         factor = 1.25
     elif smaller < 450:
         factor = 1.125
-    return int(factor * width)//8*8, int(factor * height)//8*8
+    return int(factor * width) // 8 * 8, int(factor * height) // 8 * 8
 
 
 def load_learned_embed_in_clip(
@@ -363,8 +364,8 @@ class StableDiffusionInpaint:
         process_height = height
         if resize_check:
             process_width, process_height = my_resize(width, height)
-        process_width = process_width*8//8
-        process_height = process_height*8//8
+        process_width = process_width * 8 // 8
+        process_height = process_height * 8 // 8
         extra_kwargs = {
             "num_inference_steps": step,
             "guidance_scale": guidance_scale,
@@ -778,7 +779,10 @@ proceed_button_js = load_js("proceed")
 setup_button_js = load_js("setup")
 
 if RUN_IN_SPACE:
-    get_model(token=os.environ.get("hftoken", ""), model_choice=ModelChoice.INPAINTING_IMG2IMG.value)
+    get_model(
+        token=os.environ.get("hftoken", ""),
+        model_choice=ModelChoice.INPAINTING_IMG2IMG.value,
+    )
 
 blocks = gr.Blocks(
     title="StableDiffusion-Infinity",
@@ -821,7 +825,7 @@ with blocks as demo:
                 )
             with gr.Column(scale=3, min_width=320):
                 model_selection = gr.Radio(
-                    label="Choose a model here",
+                    label="Choose a model type here",
                     choices=model_choices_lst,
                     value=ModelChoice.INPAINTING.value,
                 )
@@ -848,7 +852,7 @@ with blocks as demo:
                 )
         model_path_input = gr.Textbox(
             value=model_path_input_val,
-            label="Custom Model Path",
+            label="Custom Model Path (You have to select a correct model type for your local model)",
             placeholder="Ignore this if you are not using Docker",
             elem_id="model_path_input",
         )
@@ -1006,7 +1010,7 @@ with blocks as demo:
         _js=proceed_button_js,
     )
     # cancel button can also remove error overlay
-    if gr.__version__>="3.6":
+    if gr.__version__ >= "3.6":
         cancel_button.click(fn=None, inputs=None, outputs=None, cancels=[proceed_event])
 
 
