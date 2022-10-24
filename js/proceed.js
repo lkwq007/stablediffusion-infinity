@@ -20,7 +20,8 @@ function(sel_buffer_str,
     app=app.shadowRoot??app;
     sel_buffer=app.querySelector("#input textarea").value;
     let use_correction_bak=false;
-    ({resize_check,enable_safety,use_correction_bak,enable_img2img,use_seed,seed_val,interrogate_mode}=window.config_obj);
+    ({resize_check,enable_safety,enable_img2img,use_seed,seed_val,interrogate_mode}=window.config_obj);
+    seed_val=Number(seed_val);
     return [
         sel_buffer,
         prompt_text,
