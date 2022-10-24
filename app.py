@@ -443,7 +443,7 @@ class StableDiffusion:
             pipe = convert_checkpoint(model_path)
             if device == "cuda" and not args.fp32:
                 pipe.to(torch.float16)
-            text2img = StableDiffusionInpaintPipeline(
+            text2img = StableDiffusionPipeline(
                 vae=vae,
                 text_encoder=pipe.text_encoder,
                 tokenizer=pipe.tokenizer,
