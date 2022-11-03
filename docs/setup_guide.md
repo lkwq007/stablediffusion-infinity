@@ -20,7 +20,7 @@ if the `environment.yml` doesn't work for you, you may install dependencies manu
 ```
 conda create -n sd-inf python=3.10
 conda activate sd-inf
-conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
+conda install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit=11.3 -c pytorch
 conda install scipy scikit-image
 conda install -c conda-forge diffusers transformers ftfy
 pip install opencv-python
@@ -45,7 +45,7 @@ Note that `opencv` library (e.g. `libopencv-dev`/`opencv-devel`, the package nam
 ```
 conda create -n sd-inf python=3.10
 conda activate sd-inf
-conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
+conda install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit=11.3 -c pytorch
 conda install scipy scikit-image
 conda install -c conda-forge diffusers transformers ftfy
 pip install opencv-python
