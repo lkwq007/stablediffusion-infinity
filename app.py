@@ -8,7 +8,7 @@ import torch
 from torch import autocast
 import diffusers
 
-assert diffusers.__version__ >= "0.9.0", "Please upgrade diffusers to 0.9.0"
+assert tuple(map(int,diffusers.__version__.split(".")))  >= (0,9,0), "Please upgrade diffusers to 0.9.0"
 
 from diffusers.configuration_utils import FrozenDict
 from diffusers import (
@@ -1114,7 +1114,7 @@ with blocks as demo:
         _js=proceed_button_js,
     )
     # cancel button can also remove error overlay
-    if gr.__version__ >= "3.6":
+    if tuple(map(int,gr.__version__.split("."))) >= (3,6):
         cancel_button.click(fn=None, inputs=None, outputs=None, cancels=[proceed_event])
 
 
