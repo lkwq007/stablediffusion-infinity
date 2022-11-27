@@ -8,7 +8,7 @@ import torch
 from torch import autocast
 import diffusers
 
-assert diffusers.__version__ >= "0.6.0", "Please upgrade diffusers to 0.6.0"
+assert diffusers.__version__ >= "0.9.0", "Please upgrade diffusers to 0.9.0"
 
 from diffusers.configuration_utils import FrozenDict
 from diffusers import (
@@ -18,6 +18,9 @@ from diffusers import (
     StableDiffusionInpaintPipelineLegacy,
     DDIMScheduler,
     LMSDiscreteScheduler,
+    DiffusionPipeline,
+    StableDiffusionUpscalePipeline,
+    DPMSolverMultistepScheduler
 )
 from diffusers.models import AutoencoderKL
 from PIL import Image
@@ -49,7 +52,9 @@ RUN_IN_SPACE = "RUN_IN_HG_SPACE" in os.environ
 
 class ModelChoice(Enum):
     INPAINTING = "stablediffusion-inpainting"
+    INPAINTING2 = "stablediffusion-2-inpainting"
     INPAINTING_IMG2IMG = "stablediffusion-inpainting+img2img-v1.5"
+    MODEL_2_0 = "stablediffusion-v2.0"
     MODEL_1_5 = "stablediffusion-v1.5"
     MODEL_1_4 = "stablediffusion-v1.4"
 
@@ -249,7 +254,7 @@ def load_learned_embed_in_clip(
     text_encoder.get_input_embeddings().weight.data[token_id] = embeds
 
 
-scheduler_dict = {"PLMS": None, "DDIM": None, "K-LMS": None}
+scheduler_dict = {"PLMS": None, "DDIM": None, "K-LMS": None, "DPM": None}
 
 
 class StableDiffusionInpaint:
@@ -324,6 +329,9 @@ class StableDiffusionInpaint:
             LMSDiscreteScheduler(
                 beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear"
             )
+        )
+        scheduler_dict["DPM"] = prepare_scheduler(
+            DPMSolverMultistepScheduler.from_config(inpaint.scheduler.config)
         )
         self.safety_checker = inpaint.safety_checker
         save_token(token)
@@ -540,6 +548,9 @@ class StableDiffusion:
                 beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear"
             )
         )
+        scheduler_dict["DPM"] = prepare_scheduler(
+            DPMSolverMultistepScheduler.from_config(text2img.scheduler.config)
+        )
         self.safety_checker = text2img.safety_checker
         img2img = StableDiffusionImg2ImgPipeline(
             vae=text2img.vae,
@@ -713,6 +724,13 @@ def get_model(token="", model_choice="", model_path=""):
             tmp = StableDiffusionInpaint(
                 token=token, model_name=model_name, model_path=model_path
             )
+        elif model_choice == ModelChoice.INPAINTING2.value:
+            if len(model_name) < 1:
+                model_name = "stabilityai/stable-diffusion-2-inpainting"
+            print(f"Using [{model_name}] {model_path}")
+            tmp = StableDiffusionInpaint(
+                token=token, model_name=model_name, model_path=model_path
+            )
         elif model_choice == ModelChoice.INPAINTING_IMG2IMG.value:
             print(
                 f"Note that {ModelChoice.INPAINTING_IMG2IMG.value} only support remote model and requires larger vRAM"
@@ -725,6 +743,8 @@ def get_model(token="", model_choice="", model_path=""):
                     if model_choice == ModelChoice.MODEL_1_5.value
                     else "CompVis/stable-diffusion-v1-4"
                 )
+                if model_choice == ModelChoice.MODEL_2_0.value:
+                    model_name = "stabilityai/stable-diffusion-2-base"
             tmp = StableDiffusion(
                 token=token, model_name=model_name, model_path=model_path
             )
