@@ -993,7 +993,7 @@ with blocks as demo:
                     )
                     sd_scheduler_eta = gr.Number(label="Eta", value=0.0)
         with gr.Column(scale=1, min_width=80):
-            sd_step = gr.Number(label="Step", value=50, precision=0)
+            sd_step = gr.Number(label="Step", value=25, precision=0)
             sd_guidance = gr.Number(label="Guidance", value=7.5)
 
     proceed_button = gr.Button("Proceed", elem_id="proceed", visible=DEBUG_MODE)
