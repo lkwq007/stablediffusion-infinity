@@ -573,7 +573,7 @@ class StableDiffusion:
         self.text2img = text2img
         self.inpaint = inpaint
         self.img2img = img2img
-        if "stable-diffusion-2" in model_name:
+        if True:
             self.unified = inpaint
         else:
             self.unified = UnifiedPipeline(
