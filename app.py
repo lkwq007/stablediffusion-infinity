@@ -52,7 +52,7 @@ RUN_IN_SPACE = "RUN_IN_HG_SPACE" in os.environ
 
 class ModelChoice(Enum):
     INPAINTING = "stablediffusion-inpainting"
-    INPAINTING2 = "stablediffusion-2-inpainting"
+    INPAINTING2 = "stablediffusion-v2-inpainting"
     INPAINTING_IMG2IMG = "stablediffusion-inpainting+img2img-v1.5"
     MODEL_2_0 = "stablediffusion-v2.0"
     MODEL_1_5 = "stablediffusion-v1.5"
@@ -573,7 +573,10 @@ class StableDiffusion:
         self.text2img = text2img
         self.inpaint = inpaint
         self.img2img = img2img
-        self.unified = UnifiedPipeline(
+        if "stable-diffusion-2" in model_name:
+            self.unified = inpaint
+        else:
+            self.unified = UnifiedPipeline(
             vae=text2img.vae,
             text_encoder=text2img.text_encoder,
             tokenizer=text2img.tokenizer,
@@ -908,7 +911,7 @@ with blocks as demo:
                 model_selection = gr.Radio(
                     label="Choose a model type here",
                     choices=model_choices_lst,
-                    value=ModelChoice.INPAINTING.value,
+                    value=ModelChoice.INPAINTING2.value,
                 )
             with gr.Column(scale=1, min_width=100):
                 canvas_width = gr.Number(
@@ -986,7 +989,7 @@ with blocks as demo:
                     )
                 with gr.Row():
                     sd_scheduler = gr.Dropdown(
-                        list(scheduler_dict.keys()), label="Scheduler", value="PLMS"
+                        list(scheduler_dict.keys()), label="Scheduler", value="DPM"
                     )
                     sd_scheduler_eta = gr.Number(label="Eta", value=0.0)
         with gr.Column(scale=1, min_width=80):
