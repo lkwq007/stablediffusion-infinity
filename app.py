@@ -1034,6 +1034,7 @@ with blocks as demo:
             if model_choice in [
                 ModelChoice.INPAINTING.value,
                 ModelChoice.INPAINTING_IMG2IMG.value,
+                ModelChoice.INPAINTING2.value
             ]:
                 init_val = "cv2_ns"
             else:
