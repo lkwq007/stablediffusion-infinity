@@ -20,9 +20,9 @@ if the `environment.yml` doesn't work for you, you may install dependencies manu
 ```
 conda create -n sd-inf python=3.10
 conda activate sd-inf
-conda install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit=11.3 -c pytorch
+conda install pytorch torchvision torchaudio pytorch-cuda=11.6 -c pytorch -c nvidia
 conda install scipy scikit-image
-conda install -c conda-forge diffusers transformers ftfy
+conda install -c conda-forge diffusers transformers ftfy accelerate
 pip install opencv-python
 pip install gradio==3.6
 pip install pytorch-lightning==1.7.7 einops==0.4.1 omegaconf==2.2.3
@@ -45,9 +45,9 @@ Note that `opencv` library (e.g. `libopencv-dev`/`opencv-devel`, the package nam
 ```
 conda create -n sd-inf python=3.10
 conda activate sd-inf
-conda install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit=11.3 -c pytorch
+conda install pytorch torchvision torchaudio pytorch-cuda=11.6 -c pytorch -c nvidia
 conda install scipy scikit-image
-conda install -c conda-forge diffusers transformers ftfy
+conda install -c conda-forge diffusers transformers ftfy accelerate
 pip install opencv-python
 pip install gradio==3.6
 pip install pytorch-lightning==1.7.7 einops==0.4.1 omegaconf==2.2.3
@@ -69,7 +69,7 @@ conda create -n sd-inf python=3.10
 conda activate sd-inf
 conda install pytorch torchvision torchaudio -c pytorch-nightly
 conda install scipy scikit-image
-conda install -c conda-forge diffusers transformers ftfy
+conda install -c conda-forge diffusers transformers ftfy accelerate
 pip install opencv-python
 pip install gradio==3.6
 pip install pytorch-lightning==1.7.7 einops==0.4.1 omegaconf==2.2.3
