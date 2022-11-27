@@ -341,6 +341,7 @@ class StableDiffusionInpaint:
             )
             if total_memory <= 5 or args.lowvram:
                 inpaint.enable_attention_slicing()
+                inpaint.enable_sequential_cpu_offload()
         except:
             pass
         self.inpaint = inpaint
@@ -568,6 +569,10 @@ class StableDiffusion:
             )
             if total_memory <= 5 or args.lowvram:
                 inpaint.enable_attention_slicing()
+                inpaint.enable_sequential_cpu_offload()
+                if inpainting_model:
+                    text2img.enable_attention_slicing()
+                    text2img.enable_sequential_cpu_offload()
         except:
             pass
         self.text2img = text2img
