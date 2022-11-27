@@ -20,7 +20,7 @@ from diffusers import (
     LMSDiscreteScheduler,
     DiffusionPipeline,
     StableDiffusionUpscalePipeline,
-    DPMSolverMultistepScheduler
+    DPMSolverMultistepScheduler,
 )
 from diffusers.models import AutoencoderKL
 from PIL import Image
@@ -52,11 +52,12 @@ RUN_IN_SPACE = "RUN_IN_HG_SPACE" in os.environ
 
 class ModelChoice(Enum):
     INPAINTING = "stablediffusion-inpainting"
-    INPAINTING2 = "stablediffusion-v2-inpainting"
-    INPAINTING_IMG2IMG = "stablediffusion-inpainting+img2img-v1.5"
-    MODEL_2_0 = "stablediffusion-v2.0"
-    MODEL_1_5 = "stablediffusion-v1.5"
-    MODEL_1_4 = "stablediffusion-v1.4"
+    INPAINTING2 = "stablediffusion-2-inpainting"
+    INPAINTING_IMG2IMG = "stablediffusion-inpainting+img2img-1.5"
+    MODEL_2_0_V = "stablediffusion-2.0v"
+    MODEL_2_0 = "stablediffusion-2.0"
+    MODEL_1_5 = "stablediffusion-1.5"
+    MODEL_1_4 = "stablediffusion-1.4"
 
 
 try:
@@ -582,14 +583,14 @@ class StableDiffusion:
             self.unified = inpaint
         else:
             self.unified = UnifiedPipeline(
-            vae=text2img.vae,
-            text_encoder=text2img.text_encoder,
-            tokenizer=text2img.tokenizer,
-            unet=text2img.unet,
-            scheduler=text2img.scheduler,
-            safety_checker=text2img.safety_checker,
-            feature_extractor=text2img.feature_extractor,
-        ).to(device)
+                vae=text2img.vae,
+                text_encoder=text2img.text_encoder,
+                tokenizer=text2img.tokenizer,
+                unet=text2img.unet,
+                scheduler=text2img.scheduler,
+                safety_checker=text2img.safety_checker,
+                feature_extractor=text2img.feature_extractor,
+            ).to(device)
         self.inpainting_model = inpainting_model
 
     def run(
@@ -753,6 +754,8 @@ def get_model(token="", model_choice="", model_path=""):
                 )
                 if model_choice == ModelChoice.MODEL_2_0.value:
                     model_name = "stabilityai/stable-diffusion-2-base"
+                elif model_choice == ModelChoice.MODEL_2_0_V.value:
+                    model_name = "stabilityai/stable-diffusion-2"
             tmp = StableDiffusion(
                 token=token, model_name=model_name, model_path=model_path
             )
@@ -1042,7 +1045,7 @@ with blocks as demo:
             if model_choice in [
                 ModelChoice.INPAINTING.value,
                 ModelChoice.INPAINTING_IMG2IMG.value,
-                ModelChoice.INPAINTING2.value
+                ModelChoice.INPAINTING2.value,
             ]:
                 init_val = "cv2_ns"
             else:
