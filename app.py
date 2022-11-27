@@ -984,7 +984,7 @@ with blocks as demo:
                         label="Strength",
                         minimum=0.0,
                         maximum=1.0,
-                        value=0.75,
+                        value=1.0,
                         step=0.01,
                     )
                 with gr.Row():
