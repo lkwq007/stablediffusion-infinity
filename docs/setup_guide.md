@@ -5,6 +5,7 @@ Please install conda at first ([miniconda](https://docs.conda.io/en/latest/minic
 - [Setup with Linux](#linux)
 - [Setup with Windows](#windows)
 - [Setup with MacOS](#macos)
+- [Upgrade from previous version](#upgrade)
 
 ## Setup with Linux <a name="linux"></a>
 
@@ -24,7 +25,7 @@ conda install pytorch torchvision torchaudio pytorch-cuda=11.6 -c pytorch -c nvi
 conda install scipy scikit-image
 conda install -c conda-forge diffusers transformers ftfy accelerate
 pip install opencv-python
-pip install gradio==3.6
+pip install -U gradio
 pip install pytorch-lightning==1.7.7 einops==0.4.1 omegaconf==2.2.3
 pip install timm
 ```
@@ -49,7 +50,7 @@ conda install pytorch torchvision torchaudio pytorch-cuda=11.6 -c pytorch -c nvi
 conda install scipy scikit-image
 conda install -c conda-forge diffusers transformers ftfy accelerate
 pip install opencv-python
-pip install gradio==3.6
+pip install -U gradio
 pip install pytorch-lightning==1.7.7 einops==0.4.1 omegaconf==2.2.3
 pip install timm
 ```
@@ -71,7 +72,7 @@ conda install pytorch torchvision torchaudio -c pytorch-nightly
 conda install scipy scikit-image
 conda install -c conda-forge diffusers transformers ftfy accelerate
 pip install opencv-python
-pip install gradio==3.6
+pip install -U gradio
 pip install pytorch-lightning==1.7.7 einops==0.4.1 omegaconf==2.2.3
 pip install timm
 ```
@@ -85,4 +86,10 @@ python app.py
 
 Note that `opencv` library is required for `PyPatchMatch`. You may need to install `opencv` by yourself (via `homebrew` or compile from source). If no `opencv` installed, the `patch_match` option (usually better quality) won't work. 
 
+## Upgrade <a name="upgrade"></a>
 
+```
+conda install -c conda-forge diffusers transformers ftfy accelerate
+conda update -c conda-forge diffusers transformers ftfy accelerate
+pip install -U gradio
+```
