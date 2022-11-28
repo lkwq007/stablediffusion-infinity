@@ -370,7 +370,7 @@ class StableDiffusionInpaint:
         selected_scheduler = scheduler_dict.get(scheduler, scheduler_dict["PLMS"])
         for item in [inpaint]:
             item.scheduler = selected_scheduler
-            if enable_safety:
+            if enable_safety or self.safety_checker is None:
                 item.safety_checker = self.safety_checker
             else:
                 item.safety_checker = lambda images, **kwargs: (images, False)
@@ -621,7 +621,7 @@ class StableDiffusion:
         selected_scheduler = scheduler_dict.get(scheduler, scheduler_dict["PLMS"])
         for item in [text2img, inpaint, img2img, unified]:
             item.scheduler = selected_scheduler
-            if enable_safety:
+            if enable_safety or self.safety_checker is None:
                 item.safety_checker = self.safety_checker
             else:
                 item.safety_checker = lambda images, **kwargs: (images, False)
