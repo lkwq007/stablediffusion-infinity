@@ -11,12 +11,12 @@ RUN apt-get update && \
 
 COPY docker/opencv.pc /usr/lib/pkgconfig/opencv.pc
 
-RUN useradd -ms /bin/bash user && mkdir /app && chown user:user /app
+RUN useradd -ms /bin/bash user
 USER user
 
 RUN mkdir ~/.huggingface && conda init bash
 
-COPY . /app
+COPY --chown=user:user . /app
 WORKDIR /app
 
 EXPOSE 8888
