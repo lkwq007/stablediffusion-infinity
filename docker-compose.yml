@@ -1,17 +1,14 @@
-version: "3.3"  # optional since v1.27.0
 services:
   sd-infinity:
-    build: docker
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    #shm_size: '2gb' # Enable if more shared memory is needed
     ports:
       - "8888:8888"
-    stdin_open: true
-    tty: true
-    command: "/app/docker/entrypoint.sh"
     volumes:
-      - .:/app
       - user_home:/home/user
       - cond_env:/opt/conda/envs
-      - /dev/shm:/dev/shm
     deploy:
       resources:
         reservations:
