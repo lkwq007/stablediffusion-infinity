@@ -1,0 +1,7 @@
+.idea/
+.github/
+.git/
+docs/
+.dockerignore
+readme.md
+LICENSE
