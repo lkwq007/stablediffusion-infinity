@@ -1,6 +1,7 @@
 #!/bin/bash
 
-cd "$(dirname $0)"
+cd ..
+echo Current dir: "$(pwd)"
 
 if ! docker version | grep 'linux/amd64' ; then
   echo "Could not find docker."
