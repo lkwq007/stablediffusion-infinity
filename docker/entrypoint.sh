@@ -6,6 +6,7 @@ set -euxo pipefail
 
 set -x
 
+git init
 git submodule update --init --recursive
 git config --global credential.helper store
 if ! conda env list | grep sd-inf ; then
