@@ -1,6 +1,7 @@
 #!/bin/bash
 
-cd "$(dirname $0)"
+cd ..
+echo Current dir: "$(pwd)"
 
 if ! docker version | grep 'linux/amd64' ; then
   echo "Could not find docker."
@@ -13,13 +14,13 @@ if ! docker-compose version | grep v2 ; then
 fi
 
 
-if ! docker run -it  --gpus=all --rm nvidia/cuda:11.4.2-base-ubuntu20.04 nvidia-smi | egrep -e 'NVIDIA.*On' ; then
+if ! docker run -it  --gpus=all --rm nvidia/cuda:11.4.2-base-ubuntu20.04 nvidia-smi | grep -e 'NVIDIA.*On' ; then
   echo "Docker could not find your NVIDIA gpu"
   exit 1
 fi
 
-if ! docker-compose build ; then
+if ! docker compose build ; then
   echo "Error while building"
   exit 1
 fi
-docker-compose up
+docker compose up
