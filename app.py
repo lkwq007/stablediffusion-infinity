@@ -54,6 +54,7 @@ class ModelChoice(Enum):
     INPAINTING = "stablediffusion-inpainting"
     INPAINTING2 = "stablediffusion-2-inpainting"
     INPAINTING_IMG2IMG = "stablediffusion-inpainting+img2img-1.5"
+    MODEL_2_1 = "stablediffusion-2.1"
     MODEL_2_0_V = "stablediffusion-2.0v"
     MODEL_2_0 = "stablediffusion-2.0"
     MODEL_1_5 = "stablediffusion-1.5"
@@ -756,6 +757,8 @@ def get_model(token="", model_choice="", model_path=""):
                     model_name = "stabilityai/stable-diffusion-2-base"
                 elif model_choice == ModelChoice.MODEL_2_0_V.value:
                     model_name = "stabilityai/stable-diffusion-2"
+                elif model_choice == ModelChoice.MODEL_2_1.value:
+                    model_name = "stabilityai/stable-diffusion-2-1-base"
             tmp = StableDiffusion(
                 token=token, model_name=model_name, model_path=model_path
             )
