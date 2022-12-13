@@ -407,7 +407,7 @@ class StableDiffusionInpaint:
                 mask = 255 - mask
                 mask = skimage.measure.block_reduce(mask, (8, 8), np.max)
                 mask = mask.repeat(8, axis=0).repeat(8, axis=1)
-            extra_kwargs["strength"] = strength
+            # extra_kwargs["strength"] = strength
             inpaint_func = inpaint
             init_image = Image.fromarray(img)
             mask_image = Image.fromarray(mask)
@@ -677,7 +677,6 @@ class StableDiffusion:
                 mask = 255 - mask
                 mask = skimage.measure.block_reduce(mask, (8, 8), np.max)
                 mask = mask.repeat(8, axis=0).repeat(8, axis=1)
-                extra_kwargs["strength"] = strength
                 inpaint_func = inpaint
             init_image = Image.fromarray(img)
             mask_image = Image.fromarray(mask)
@@ -686,7 +685,6 @@ class StableDiffusion:
                 (process_width, process_height), resample=SAMPLING_MODE
             )
             if self.inpainting_model:
-
                 images = inpaint_func(
                     prompt=prompt,
                     init_image=input_image,
@@ -697,7 +695,8 @@ class StableDiffusion:
                     **extra_kwargs,
                 )["images"]
             else:
-                with autocast("cuda"):
+                extra_kwargs["strength"] = strength
+                if True:
                     images = inpaint_func(
                         prompt=prompt,
                         init_image=input_image,
