@@ -330,7 +330,7 @@ class StableDiffusionInpaint:
         )
         scheduler_dict["K-LMS"] = prepare_scheduler(
             LMSDiscreteScheduler(
-                beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear",
+                beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear"
             )
         )
         scheduler_dict["PNDM"] = prepare_scheduler(
