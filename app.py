@@ -21,6 +21,7 @@ from diffusers import (
     DiffusionPipeline,
     StableDiffusionUpscalePipeline,
     DPMSolverMultistepScheduler,
+    PNDMScheduler,
 )
 from diffusers.models import AutoencoderKL
 from PIL import Image
@@ -256,7 +257,7 @@ def load_learned_embed_in_clip(
     text_encoder.get_input_embeddings().weight.data[token_id] = embeds
 
 
-scheduler_dict = {"PLMS": None, "DDIM": None, "K-LMS": None, "DPM": None}
+scheduler_dict = {"PLMS": None, "DDIM": None, "K-LMS": None, "DPM": None, "PNDM": None}
 
 
 class StableDiffusionInpaint:
@@ -329,7 +330,13 @@ class StableDiffusionInpaint:
         )
         scheduler_dict["K-LMS"] = prepare_scheduler(
             LMSDiscreteScheduler(
-                beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear"
+                beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear",
+            )
+        )
+        scheduler_dict["PNDM"] = prepare_scheduler(
+            PNDMScheduler(
+                beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear",
+                skip_prk_steps=True
             )
         )
         scheduler_dict["DPM"] = prepare_scheduler(
@@ -549,6 +556,12 @@ class StableDiffusion:
         scheduler_dict["K-LMS"] = prepare_scheduler(
             LMSDiscreteScheduler(
                 beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear"
+            )
+        )
+        scheduler_dict["PNDM"] = prepare_scheduler(
+            PNDMScheduler(
+                beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear",
+                skip_prk_steps=True
             )
         )
         scheduler_dict["DPM"] = prepare_scheduler(
