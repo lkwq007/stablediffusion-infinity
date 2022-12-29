@@ -701,8 +701,6 @@ class StableDiffusion:
                         prompt=prompt,
                         init_image=input_image,
                         image=input_image,
-                        width=process_width,
-                        height=process_height,
                         mask_image=mask_image.resize((process_width, process_height)),
                         **extra_kwargs,
                     )["images"]
