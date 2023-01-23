@@ -2,12 +2,13 @@
 
 Please install conda at first ([miniconda](https://docs.conda.io/en/latest/miniconda.html) or [anaconda](https://docs.anaconda.com/anaconda/install/)). 
 
-- [Setup with Linux](#linux)
+- [Setup with Linux/Nvidia GPU](#linux-nvidia)
+- [Setup with Linux/AMD GPU](#linux-amd)
 - [Setup with Windows](#windows)
 - [Setup with MacOS](#macos)
 - [Upgrade from previous version](#upgrade)
 
-## Setup with Linux <a name="linux"></a>
+## Setup with Linux/Nvidia GPU <a name="linux-nvidia"></a>
 
 ### conda env
 setup with `environment.yml`
@@ -35,6 +36,21 @@ After setup the environment, you can run stablediffusion-infinity with following
 conda activate sd-inf
 python app.py
 ```
+
+## Setup with Linux/AMD GPU <a name="linux-amd"></a>
+
+```
+conda create -n sd-inf python=3.10
+conda activate sd-inf
+pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/rocm5.2
+conda install scipy scikit-image
+conda install -c conda-forge diffusers transformers ftfy accelerate
+pip install opencv-python
+pip install -U gradio
+pip install pytorch-lightning==1.7.7 einops==0.4.1 omegaconf==2.2.3
+pip install timm
+```
+
 
 ### CPP library (optional)
 
