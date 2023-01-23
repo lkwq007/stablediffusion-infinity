@@ -4,7 +4,7 @@ Please install conda at first ([miniconda](https://docs.conda.io/en/latest/minic
 
 - [Setup with Linux/Nvidia GPU](#linux-nvidia)
 - [Setup with Linux/AMD GPU](#linux-amd)
-- [Setup with Windows](#windows)
+- [Setup with Windows](#windows-nvidia)
 - [Setup with MacOS](#macos)
 - [Upgrade from previous version](#upgrade)
 
@@ -37,7 +37,7 @@ conda activate sd-inf
 python app.py
 ```
 
-## Setup with Linux/AMD GPU <a name="linux-amd"></a>
+## Setup with Linux/AMD GPU <a name="linux-amd"></a> (untested)
 
 ```
 conda create -n sd-inf python=3.10
@@ -70,6 +70,8 @@ pip install -U gradio
 pip install pytorch-lightning==1.7.7 einops==0.4.1 omegaconf==2.2.3
 pip install timm
 ```
+
+If you use AMD GPUs, you need to install the ONNX runtime `pip install onnxruntime-directml`. 
 
 For windows, you may need to replace `pip install opencv-python` with `conda install -c conda-forge opencv`
 

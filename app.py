@@ -74,6 +74,31 @@ USE_GLID = False
 #     from glid3xlmodel import GlidModel
 # except:
 #     USE_GLID = False
+import importlib.util
+if sys.version_info < (3, 8):
+    import importlib_metadata
+else:
+    import importlib.metadata as importlib_metadata
+# https://github.com/huggingface/diffusers/blob/a66f2baeb782e091dde4e1e6394e46f169e5ba58/src/diffusers/utils/import_utils.py#L150
+onnxruntime_version = "N/A"
+onnx_available = importlib.util.find_spec("onnxruntime") is not None
+if onnx_available:
+    candidates = (
+        "onnxruntime",
+        "onnxruntime-gpu",
+        "onnxruntime-directml",
+        "onnxruntime-openvino",
+        "ort_nightly_directml",
+    )
+    onnxruntime_version = None
+    # For the metadata, we have to look for both onnxruntime and onnxruntime-gpu
+    for pkg in candidates:
+        try:
+            onnxruntime_version = importlib_metadata.version(pkg)
+            break
+        except importlib_metadata.PackageNotFoundError:
+            pass
+    onnx_available = onnxruntime_version is not None
 
 try:
     cuda_available = torch.cuda.is_available()
