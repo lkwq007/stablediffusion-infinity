@@ -71,7 +71,7 @@ pip install pytorch-lightning==1.7.7 einops==0.4.1 omegaconf==2.2.3
 pip install timm
 ```
 
-If you use AMD GPUs, you need to install the ONNX runtime `pip install onnxruntime-directml`. 
+If you use AMD GPUs, you need to install the ONNX runtime `pip install onnxruntime-directml` (only works with the `stablediffusion-inpainting` model, untested on AMD devices). 
 
 For windows, you may need to replace `pip install opencv-python` with `conda install -c conda-forge opencv`
 
