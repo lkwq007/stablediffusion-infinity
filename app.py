@@ -74,35 +74,16 @@ USE_GLID = False
 #     from glid3xlmodel import GlidModel
 # except:
 #     USE_GLID = False
-import importlib.util
-if sys.version_info < (3, 8):
-    import importlib_metadata
-else:
-    import importlib.metadata as importlib_metadata
-# https://github.com/huggingface/diffusers/blob/a66f2baeb782e091dde4e1e6394e46f169e5ba58/src/diffusers/utils/import_utils.py#L150
-onnxruntime_version = "N/A"
-onnx_available = importlib.util.find_spec("onnxruntime") is not None
-if onnx_available:
+
+try:
     import onnxruntime
-    candidates = (
-        "onnxruntime",
-        "onnxruntime-gpu",
-        "onnxruntime-directml",
-        "onnxruntime-openvino",
-        "ort_nightly_directml",
-    )
-    onnxruntime_version = None
-    # For the metadata, we have to look for both onnxruntime and onnxruntime-gpu
-    for pkg in candidates:
-        try:
-            onnxruntime_version = importlib_metadata.version(pkg)
-            break
-        except importlib_metadata.PackageNotFoundError:
-            pass
-    onnx_available = onnxruntime_version is not None
-    onnx_providers = ["TensorrtExecutionProvider", "CUDAExecutionProvider", "DmlExecutionProvider", "OpenVINOExecutionProvider", 'CPUExecutionProvider']
+    onnx_available = True
+    onnx_providers = ["CUDAExecutionProvider", "DmlExecutionProvider", "OpenVINOExecutionProvider", 'CPUExecutionProvider']
     available_providers = onnxruntime.get_available_providers()
     onnx_providers = [item for item in onnx_providers if item in available_providers]
+except:
+    onnx_available = False
+    onnx_providers = []
 
 try:
     cuda_available = torch.cuda.is_available()
@@ -297,7 +278,7 @@ class StableDiffusionInpaint:
         original_checkpoint = False
         if device == "cpu" and onnx_available:
             from diffusers import OnnxStableDiffusionInpaintPipeline
-            pipe = OnnxStableDiffusionInpaintPipeline.from_pretrained(
+            inpaint = OnnxStableDiffusionInpaintPipeline.from_pretrained(
                 model_name,
                 revision="onnx",
                 provider=onnx_providers[0] if onnx_providers else None
@@ -489,7 +470,8 @@ class StableDiffusion:
                 provider=onnx_providers[0] if onnx_providers else None
                 )
             inpaint = OnnxStableDiffusionInpaintPipelineLegacy(
-                    vae=text2img.vae,
+                    vae_encoder=text2img.vae_encoder,
+                    vae_decoder=text2img.vae_decoder,
                     text_encoder=text2img.text_encoder,
                     tokenizer=text2img.tokenizer,
                     unet=text2img.unet,
@@ -498,7 +480,8 @@ class StableDiffusion:
                     feature_extractor=text2img.feature_extractor,
                 )
             img2img = OnnxStableDiffusionImg2ImgPipeline(
-                vae=text2img.vae,
+                vae_encoder=text2img.vae_encoder,
+                vae_decoder=text2img.vae_decoder,
                 text_encoder=text2img.text_encoder,
                 tokenizer=text2img.tokenizer,
                 unet=text2img.unet,
@@ -995,7 +978,7 @@ with blocks as demo:
                 model_selection = gr.Radio(
                     label="Choose a model type here",
                     choices=model_choices_lst,
-                    value=ModelChoice.INPAINTING2.value,
+                    value=ModelChoice.INPAINTING.value if onnx_available else ModelChoice.INPAINTING2.value,
                 )
             with gr.Column(scale=1, min_width=100):
                 canvas_width = gr.Number(
