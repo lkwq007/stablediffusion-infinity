@@ -2,13 +2,13 @@
 
 Please install conda at first ([miniconda](https://docs.conda.io/en/latest/miniconda.html) or [anaconda](https://docs.anaconda.com/anaconda/install/)). 
 
-- [Setup with Linux/Nvidia GPU](#linux-nvidia)
+- [Setup with Linux/Nvidia GPU](#linux)
 - [Setup with Linux/AMD GPU](#linux-amd)
 - [Setup with Windows](#windows-nvidia)
 - [Setup with MacOS](#macos)
 - [Upgrade from previous version](#upgrade)
 
-## Setup with Linux/Nvidia GPU <a name="linux-nvidia"></a>
+## Setup with Linux/Nvidia GPU <a name="linux"></a>
 
 ### conda env
 setup with `environment.yml`
