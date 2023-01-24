@@ -717,7 +717,7 @@ class StableDiffusion:
             if True:
                 images = img2img(
                     prompt=prompt,
-                    init_image=init_image.resize(
+                    image=init_image.resize(
                         (process_width, process_height), resample=SAMPLING_MODE
                     ),
                     strength=strength,
@@ -746,7 +746,6 @@ class StableDiffusion:
             if self.inpainting_model:
                 images = inpaint_func(
                     prompt=prompt,
-                    init_image=input_image,
                     image=input_image,
                     width=process_width,
                     height=process_height,
@@ -758,7 +757,6 @@ class StableDiffusion:
                 if True:
                     images = inpaint_func(
                         prompt=prompt,
-                        init_image=input_image,
                         image=input_image,
                         mask_image=mask_image.resize((process_width, process_height)),
                         **extra_kwargs,

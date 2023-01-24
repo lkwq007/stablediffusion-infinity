@@ -74,7 +74,7 @@ dependencies:
   - dask-core=2022.7.0=py310h06a4308_0
   - dataclasses=0.8=pyhc8e2a94_3
   - datasets=2.7.0=pyhd8ed1ab_0
-  - diffusers=0.9.0=pyhd8ed1ab_0
+  - diffusers=0.11.1=pyhd8ed1ab_0
   - dill=0.3.6=pyhd8ed1ab_1
   - ffmpeg=4.3=hf484d3e_0
   - fftw=3.3.9=h27cfd23_1
