@@ -120,18 +120,21 @@ var toolbar=new w2toolbar({
         { type: "button", id: "load", tooltip: "Load Canvas", icon: "fa-solid fa-file-import" },
         { type: "button", id: "save", tooltip: "Save Canvas", icon: "fa-solid fa-file-export" },
         { type: "button", id: "export", tooltip: "Export Image", icon: "fa-solid fa-floppy-disk" },
-        { type: "break" },
+        { type: "new-line"},
         { type: "button", id: "upload", text: "Upload Image", icon: "fa-solid fa-upload" },
         { type: "break" },
         { type: "radio", id: "selection", group: "1", tooltip: "Selection", icon: "fa-solid fa-arrows-up-down-left-right", checked: true },
+        { type: "new-line"},
         { type: "radio", id: "canvas", group: "1", tooltip: "Canvas", icon: "fa-solid fa-image" },
         { type: "radio", id: "eraser", group: "1", tooltip: "Eraser", icon: "fa-solid fa-eraser" },
         { type: "break" },
         { type: "button", id: "outpaint", text: "Outpaint", tooltip: "Run Outpainting", icon: "fa-solid fa-brush" },
+        { type: "new-line"},
         { type: "button", id: "interrogate", text: "Interrogate", tooltip: "Get a prompt with Clip Interrogator ", icon: "fa-solid fa-magnifying-glass" },
         { type: "break" },
         { type: "button", id: "accept", text: "Accept", tooltip: "Accept current result", icon: "fa-solid fa-check", hidden: true, disabled:true,},
         { type: "button", id: "cancel", text: "Cancel", tooltip: "Cancel current outpainting/error", icon: "fa-solid fa-ban", hidden: true},
+        { type: "break" },
         { type: "button", id: "retry", text: "Retry", tooltip: "Retry", icon: "fa-solid fa-rotate", hidden: true, disabled:true,},
         { type: "button", id: "prev", tooltip: "Prev Result", icon: "fa-solid fa-caret-left", hidden: true, disabled:true,},
         { type: "html", id: "current", hidden: true, disabled:true,
@@ -148,11 +151,11 @@ var toolbar=new w2toolbar({
         { type: "button", id: "next", tooltip: "Next Result", icon: "fa-solid fa-caret-right", hidden: true,disabled:true,},
         { type: "button", id: "add_image", text: "Add Image", icon: "fa-solid fa-file-circle-plus", hidden: true,disabled:true,},
         { type: "button", id: "delete_image", text: "Delete Image", icon: "fa-solid fa-trash-can", hidden: true,disabled:true,},
+        // { type: "button", id: "resize_eraser", tooltip: "Resize Eraser", icon: "fa-solid fa-sliders" },
+        { type: "new-line"},
+        { type: "button", id: "resize_selection", text: "Resize Selection", tooltip: "Resize Selection", icon: "fa-solid fa-expand" },
         { type: "button", id: "confirm", text: "Confirm", icon: "fa-solid fa-check", hidden: true,disabled:true,},
         { type: "button", id: "cancel_overlay", text: "Cancel", icon: "fa-solid fa-ban", hidden: true,disabled:true,},
-        { type: "break" },
-        { type: "spacer" },
-        { type: "break" },
         { type: "button", id: "eraser_size_btn", tooltip: "Eraser Size", text:"Size", icon: "fa-solid fa-eraser", hidden: true, count: 32},
         { type: "html", id: "eraser_size", hidden: true,
             async onRefresh(event) {
@@ -173,9 +176,7 @@ var toolbar=new w2toolbar({
                 query(this.box).find("#tb_toolbar_item_eraser_size").append(fragment)
             }
         },
-        // { type: "button", id: "resize_eraser", tooltip: "Resize Eraser", icon: "fa-solid fa-sliders" },
-        { type: "button", id: "resize_selection", text: "Resize Selection", tooltip: "Resize Selection", icon: "fa-solid fa-expand" },
-        { type: "break" },
+        { type: "new-line"},
         { type: "html", id: "scale",
             async onRefresh(event) {
                 await event.complete
@@ -193,17 +194,20 @@ var toolbar=new w2toolbar({
         { type: "button", id: "help", tooltip: "Help", icon: "fa-solid fa-circle-info" },
         { type: "new-line"},
         { type: "button", id: "setting", text: "Canvas Setting", tooltip: "Resize Canvas Here", icon: "fa-solid fa-sliders" },
-        { type: "break" },
+        { type: "new-line"},
         check_button("enable_history","Enable History:",false, "Enable Canvas History"),
         { type: "button", id: "undo", tooltip: "Undo last erasing/last outpainting", icon: "fa-solid fa-rotate-left", disabled: true },
         { type: "button", id: "redo", tooltip: "Redo", icon: "fa-solid fa-rotate-right", disabled: true },
-        { type: "break" },
+        { type: "new-line"},
         check_button("enable_img2img","Enable Img2Img",false),
+        { type: "new-line"},
         // check_button("use_correction","Photometric Correction",false),
         check_button("resize_check","Resize Small Input",true),
+        { type: "new-line"},
         check_button("enable_safety","Enable Safety Checker",true),
+        { type: "new-line"},
         check_button("square_selection","Square Selection Only",false),
-        {type: "break"},
+        { type: "new-line"},
         check_button("use_seed","Use Seed:",false),
         { type: "html", id: "seed_val",
             async onRefresh(event) {
@@ -218,6 +222,7 @@ var toolbar=new w2toolbar({
                 query(this.box).find("#tb_toolbar_item_seed_val").append(fragment)
             }
         },
+        { type: "new-line"},
         { type: "button", id: "random_seed", tooltip: "Set a random seed", icon: "fa-solid fa-dice" },
     ],
     onClick(event) {
@@ -503,7 +508,7 @@ function onObjectMoved(e)
 {
     let object = e.target;
     if(object.isType("rect"))
-    {   
+    {
         let l=Math.max(Math.min(object.left,window.overlay.width-object.width-object.strokeWidth),0);
         let t=Math.max(Math.min(object.top,window.overlay.height-object.height-object.strokeWidth),0);
         object.set({left:l,top:t});
@@ -546,7 +551,7 @@ window.adjust_selection=function(x,y,width,height)
         left: x,
         top: y,
         fill: "rgba(0,0,0,0)",
-        strokeWidth: 3, 
+        strokeWidth: 3,
         stroke: "rgba(0,0,0,0.7)",
         cornerColor: "red",
         cornerStrokeColor: "red",

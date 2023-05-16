@@ -8,7 +8,9 @@
 <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/lkwq007/stablediffusion-infinity@v0.1.2/js/w2ui.min.js"></script>
 <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/gh/lkwq007/stablediffusion-infinity@v0.1.2/js/fabric.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/gh/lkwq007/stablediffusion-infinity@v0.1.2/js/toolbar.js"></script>
+<script defer src="./js/toolbar.js"></script>
+
+<link rel="stylesheet" href="./css/toolbar.css">
 
 <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
 <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
@@ -23,6 +25,7 @@
   position: absolute;
   top: 0;
   left: 0;
+  transform: translate(-50%, -50%);
 }
 .control {
   display: none;
@@ -180,7 +183,7 @@ async def draw_canvas_func(event):
     canvas.draw_buffer()
     canvas.draw_selection_box()
     base_lst[0]=canvas
-  
+
 async def export_func(event):
     base=base_lst[0]
     arr=base.export()
@@ -254,7 +257,7 @@ async def history_undo_func(event):
     if state is not None:
         base.load(state)
     update_undo_redo(*history.check())
-    
+
 async def history_setup_func(event):
     base=base_lst[0]
     history.undo_lst.clear()
@@ -306,7 +309,7 @@ async def upload_func(event):
 
 async def setup_shortcut_func(event):
     setup_shortcut(event.data[1])
-  
+
 
 document.querySelector("#export").addEventListener("click",create_proxy(export_func))
 document.querySelector("#undo").addEventListener("click",create_proxy(undo_func))
@@ -323,7 +326,7 @@ async def setup_func():
 async def reset_func(event):
     base=base_lst[0]
     base.reset()
-    
+
 async def load_func(event):
     base=base_lst[0]
     base.load(event.data[1])
@@ -468,7 +471,7 @@ async def message_func(event):
         await setup_shortcut_func(event)
     elif event.data[0]=="resize":
         await resize_func(event)
-    
+
 window.addEventListener("message",create_proxy(message_func))
 
 import asyncio
