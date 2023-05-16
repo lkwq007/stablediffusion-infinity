@@ -1,6 +1,6 @@
 #outer_container {
     display: flex;
-    padding: 0 40px;
+    padding: 40px;
 }
 
 #toolbar {
